@@ -1,9 +1,11 @@
 {
   "name": "deckbuildingfordoctors",
-  "devDependencies": {
-    "serve": "^14.2.4"
-  },
+  "type": "module",
   "scripts": {
-    "start": "serve ."
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
   }
 }
