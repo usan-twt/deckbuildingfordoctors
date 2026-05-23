@@ -1,6 +1,9 @@
 {
   "name": "deckbuildingfordoctors",
+  "devDependencies": {
+    "serve": "^14.2.4"
+  },
   "scripts": {
-    "start": "npx serve ."
+    "start": "serve ."
   }
 }
