@@ -1,65 +1,72 @@
 # CLAUDE.md
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+## Project Overview
 
-## 1. Think Before Coding
+**INTERN Combat Prototype** — a browser-based deck-building card game with a medical theme, written entirely in Korean. The player manages a doctor treating a patient by playing cards each turn to fight a disease and suppress symptoms.
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+No build tools, no dependencies, no package manager. Pure vanilla HTML/CSS/JS.
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+## Running the Game
 
-## 2. Simplicity First
+Open `index.html` directly in a browser, or serve it with any static file server:
 
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-## 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
+```bash
+python3 -m http.server 8080
+# then open http://localhost:8080
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+There are no tests, no linting setup, and no CI.
+
+## Architecture
+
+All game logic lives in a single file: **`game.js`** (~316 lines). It is structured in sections:
+
+| Section | What it does |
+|---|---|
+| `DATA` | Hardcoded `CARDS`, `SYMPTOMS`, and `STARTER_DECK` constants |
+| `STATE` | Global `G` object holding all mutable game state; `newGame()` initializes it |
+| `UI` | DOM references, `print()`, and `waitInput()` (Promise-based async input) |
+| `DRAW` | `drawCards(n)` — shuffles discard back into deck when exhausted |
+| `SYMPTOM PHASE` | `symptomPhase()` — applies damage/effects from active symptoms each turn |
+| `PLAY CARD` | `playCard(id)` / `doSuppress(effect)` — resolves card effects |
+| `TURN` | `runTurn()` — main async turn loop (draw → play → symptom phase) |
+| `MAIN` | Top-level IIFE that runs the game loop |
+
+### Data files vs. game.js
+
+`data/cards.json` and `data/symptoms.json` are **not loaded at runtime** — they are reference/design documents. The live data is the hardcoded objects in `game.js`. The two can diverge; when editing card or symptom data, update `game.js` (the source of truth) and keep the JSON files in sync manually if needed.
+
+`scenarios/tutorial.json` is similarly a design document — the tutorial scenario is hardcoded in `newGame()`.
+
+### Key game state (`G` object)
+
+```
+diseaseHp, patientHp, maxHp, energyMax, energy
+symptoms[]  — { name, sup (suppress turns), neglect, escalate }
+deck[], discard[], hand[]
+treatBuff, treatDebuff, defTotal, defReduce, costReduce  — per-turn accumulators
+```
+
+### Symptom mechanics
+
+Symptoms have two modes: **active** (sup === 0) or **suppressed** (sup > 0, counts down). Neglected active symptoms evolve after `evolveAt` turns into stronger forms. Several symptoms have cross-amplification effects (e.g., 발열 deals extra damage when 감염 or 탈수 is also active).
+
+### Card types
+
+- `treatment` — damages `diseaseHp` or suppresses a symptom (대증처치)
+- `stabilize` — adds to `defTotal` (consumed at symptom phase) or heals patient
+- `support` — buffs, draw, cost reduction; effects apply within the same turn
 
 ---
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+## Behavioral Guidelines
+
+**Think before coding.** State assumptions explicitly. If multiple interpretations exist, present them.
+
+**Simplicity first.** Minimum code that solves the problem. No speculative features, no extra abstractions.
+
+**Surgical changes.** Touch only what you must. Match existing style. Don't clean up adjacent code.
+
+**Goal-driven.** Define verifiable success criteria before implementing. For multi-step tasks, state a brief plan.
