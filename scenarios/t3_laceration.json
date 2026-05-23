@@ -1,0 +1,17 @@
+{
+  "name": "T-3: 작업장 열상",
+  "disease_hp": 26,
+  "patient_hp": 26,
+  "max_patient_hp": 26,
+  "energy_max": 2,
+  "symptoms": ["출혈", "통증"],
+  "symptom_defs": {
+    "출혈": {"base_damage": 5},
+    "통증": {"base_damage": 0, "treatment_debuff": 1}
+  },
+  "deck": [
+    "투약", "투약", "대증처치", "대증처치", "응급시술",
+    "수액투여", "수액투여", "응급처치", "활력징후확인", "경과관찰",
+    "청진", "청진", "약재준비", "간호사호출", "환자면담"
+  ]
+}

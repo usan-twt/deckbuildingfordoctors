@@ -2,6 +2,7 @@
 
 let CARDS = {};
 let SYMPTOMS = {};
+let BASE_SYMPTOMS = {};
 
 function buildCards(arr) {
   const out = {};
@@ -13,19 +14,20 @@ function buildSymptoms(raw) {
   const out = {};
   for (const [name, d] of Object.entries(raw)) {
     const s = { dmg: d.base_damage || 0 };
-    if (d.escalate       != null) s.escalate       = d.escalate;
-    if (d.amplified_by)           s.amp             = d.amplified_by;
-    if (d.defense_reduce != null) s.defReduce       = d.defense_reduce;
-    if (d.treatment_debuff != null) s.treatDebuff   = d.treatment_debuff;
-    if (d.draw_reduce    != null) s.drawReduce      = d.draw_reduce;
-    if (d.treatment_half)         s.treatHalf       = true;
-    if (d.defense_half)           s.defHalf         = true;
-    if (d.all_symptoms_bonus != null) s.allBonus    = d.all_symptoms_bonus;
-    if (d.suppress_reduce != null)  s.suppressReduce = d.suppress_reduce;
-    if (d.fixed_draw     != null) s.fixedDraw       = d.fixed_draw;
-    if (d.defense_nullify)        s.defNullify      = true;
-    if (d.evolves_at     != null) s.evolveAt        = d.evolves_at;
-    if (d.evolves_to)             s.evolveTo        = d.evolves_to;
+    if (d.escalate           != null) s.escalate        = d.escalate;
+    if (d.amplified_by)               s.amp              = d.amplified_by;
+    if (d.defense_reduce     != null) s.defReduce        = d.defense_reduce;
+    if (d.defense_reduce_amp)         s.defReduceAmp     = d.defense_reduce_amp;
+    if (d.treatment_debuff   != null) s.treatDebuff      = d.treatment_debuff;
+    if (d.draw_reduce        != null) s.drawReduce       = d.draw_reduce;
+    if (d.treatment_half)             s.treatHalf        = true;
+    if (d.defense_half)               s.defHalf          = true;
+    if (d.all_symptoms_bonus != null) s.allBonus         = d.all_symptoms_bonus;
+    if (d.suppress_reduce    != null) s.suppressReduce   = d.suppress_reduce;
+    if (d.fixed_draw         != null) s.fixedDraw        = d.fixed_draw;
+    if (d.defense_nullify)            s.defNullify       = true;
+    if (d.evolves_at         != null) s.evolveAt         = d.evolves_at;
+    if (d.evolves_to)                 s.evolveTo         = d.evolves_to;
     if (d.trigger_on_suppress) {
       s.triggerSuppress = {};
       for (const [tgt, ef] of Object.entries(d.trigger_on_suppress))
@@ -46,6 +48,12 @@ function buildSymptoms(raw) {
 let G;
 
 function newGame(scenario) {
+  // Merge global symptom definitions with scenario-specific overrides
+  SYMPTOMS = { ...BASE_SYMPTOMS };
+  if (scenario.symptom_defs) {
+    Object.assign(SYMPTOMS, buildSymptoms(scenario.symptom_defs));
+  }
+
   G = {
     diseaseHp:    scenario.disease_hp,
     maxDiseaseHp: scenario.disease_hp,
@@ -127,18 +135,17 @@ function symptomPhase() {
     for (const [src, val] of Object.entries(d.amp || {}))
       if (an.has(src)) dmg += val;
     if (an.has('패혈증') && s.name !== '패혈증')
-      dmg += SYMPTOMS['패혈증'].allBonus || 0;
+      dmg += SYMPTOMS['패혈증']?.allBonus || 0;
 
     if (s.name === '탈수') {
       let r = d.defReduce || 0;
-      if (an.has('출혈')) r += d.amp?.['출혈'] || 0;
+      for (const [src, val] of Object.entries(d.defReduceAmp || {}))
+        if (an.has(src)) r += val;
       G.defReduce += r;
     }
-    if (s.name === '통증') {
-      G.treatDebuff += d.treatDebuff || 0;
-      if (an.has('호흡곤란')) G.defReduce += 1;
+    if (s.name === '호흡곤란') {
+      G.defReduce += d.drawReduce || 0;
     }
-    if (s.name === '호흡곤란') G.defReduce += d.drawReduce || 0;
 
     totalDmg += dmg;
     if (dmg) print(`  ${s.name}: 환자 -${dmg} HP`);
@@ -232,8 +239,10 @@ async function doSuppress(effect) {
 async function runTurn() {
   G.turn++;
   G.energy = G.energyMax;
-  G.treatBuff = 0; G.treatDebuff = 0;
-  G.defTotal = 0;  G.defReduce = 0; G.costReduce = 0;
+  G.treatBuff = 0; G.defTotal = 0; G.defReduce = 0; G.costReduce = 0;
+
+  // 치료 디버프는 턴 시작 시 활성 증상 기준으로 적용 (카드 플레이 전)
+  G.treatDebuff = active().reduce((sum, s) => sum + (SYMPTOMS[s.name]?.treatDebuff || 0), 0);
 
   let drawN = 4;
   for (const s of G.symptoms) {
@@ -289,8 +298,9 @@ function printStatus() {
   const symStr = G.symptoms.map(s =>
     s.sup > 0 ? `${s.name}[억제${s.sup}턴]` : `${s.name}[활성·방치${s.neglect}]`
   ).join('  ');
+  const debuffStr = G.treatDebuff > 0 ? `  ⚠ 치료 -${G.treatDebuff}` : '';
   print('═'.repeat(56));
-  print(`턴 ${G.turn}  |  에너지 ${G.energy}/${G.energyMax}`);
+  print(`턴 ${G.turn}  |  에너지 ${G.energy}/${G.energyMax}${debuffStr}`);
   print(`  환자  ${hpBar(G.patientHp, G.maxHp)}  ${G.patientHp}/${G.maxHp}`);
   print(`  본체  ${hpBar(G.diseaseHp, G.maxDiseaseHp)}  ${G.diseaseHp}/${G.maxDiseaseHp}`);
   print(`  증상: ${symStr}`);
@@ -308,16 +318,21 @@ function printHand() {
 
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 
+const SCENARIO_LIST = [
+  { file: 'tutorial',          name: 'T-1: 급성 악화 감기' },
+  { file: 't2_food_poisoning', name: 'T-2: 시장 식중독' },
+  { file: 't3_laceration',     name: 'T-3: 작업장 열상' },
+  { file: 't4_dock_fall',      name: 'T-4: 부두 낙상' },
+];
+
 (async () => {
   try {
-    const [cardsRaw, symptomsRaw, scenario] = await Promise.all([
+    const [cardsRaw, symptomsRaw] = await Promise.all([
       fetch('./data/cards.json').then(r => r.json()),
       fetch('./data/symptoms.json').then(r => r.json()),
-      fetch('./scenarios/tutorial.json').then(r => r.json()),
     ]);
-    CARDS    = buildCards(cardsRaw);
-    SYMPTOMS = buildSymptoms(symptomsRaw);
-    newGame(scenario);
+    CARDS        = buildCards(cardsRaw);
+    BASE_SYMPTOMS = buildSymptoms(symptomsRaw);
   } catch (err) {
     print('데이터 로딩 실패: ' + err.message);
     print('서버에서 실행해주세요 (file:// 비지원).');
@@ -325,7 +340,26 @@ function printHand() {
     return;
   }
 
-  print('[ INTERN 전투 프로토타입 — 급성 악화 감기 ]');
+  print('[ INTERN 전투 프로토타입 ]');
+  print('── 시나리오 선택 ──');
+  SCENARIO_LIST.forEach((s, i) => print(`  [${i}] ${s.name}`));
+  print('번호를 입력하세요:');
+
+  let idx = parseInt(await waitInput());
+  if (isNaN(idx) || idx < 0 || idx >= SCENARIO_LIST.length) idx = 0;
+  const chosen = SCENARIO_LIST[idx];
+
+  let scenario;
+  try {
+    scenario = await fetch(`./scenarios/${chosen.file}.json`).then(r => r.json());
+  } catch (err) {
+    print('시나리오 로딩 실패: ' + err.message);
+    cmdEl.disabled = true;
+    return;
+  }
+
+  newGame(scenario);
+  print(`\n[ ${chosen.name} ]`);
   print('카드 번호를 공백으로 구분해 입력. 빈 입력 = 턴 종료.\n');
 
   while (true) {

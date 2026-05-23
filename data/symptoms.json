@@ -16,13 +16,12 @@
   },
   "탈수": {
     "base_damage": 1, "defense_reduce": 2,
-    "amplified_by": {"출혈": 1},
+    "defense_reduce_amp": {"출혈": 1},
     "transfer_on_suppress": {"발열": {"defense_reduce": 1}},
     "evolves_at": 5, "evolves_to": "장기부전"
   },
   "통증": {
-    "base_damage": 0, "treatment_debuff": 1,
-    "amplified_by": {"": 0}
+    "base_damage": 0, "treatment_debuff": 1
   },
   "호흡곤란": {
     "base_damage": 0, "draw_reduce": 1,
