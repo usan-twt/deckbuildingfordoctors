@@ -1,5 +1,10 @@
 {
   "name": "T-2: 시장 식중독",
+  "patient": {
+    "name": "환자 02",
+    "info": "시장 상인 · 성인",
+    "chief_complaint": "발열, 구역질, 복통, 전신 무력감"
+  },
   "disease_hp": 30,
   "patient_hp": 28,
   "max_patient_hp": 28,

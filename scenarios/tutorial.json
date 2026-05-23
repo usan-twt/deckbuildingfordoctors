@@ -1,5 +1,10 @@
 {
-  "name": "급성 악화 감기 (튜토리얼)",
+  "name": "T-1: 급성 악화 감기",
+  "patient": {
+    "name": "환자 01",
+    "info": "일반인 · 성인",
+    "chief_complaint": "발열, 오한, 탈수감, 피로"
+  },
   "disease_hp": 28,
   "patient_hp": 30,
   "max_patient_hp": 30,

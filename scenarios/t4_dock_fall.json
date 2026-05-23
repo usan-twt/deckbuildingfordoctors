@@ -1,5 +1,10 @@
 {
   "name": "T-4: 부두 낙상",
+  "patient": {
+    "name": "환자 04",
+    "info": "부두 노동자 · 성인",
+    "chief_complaint": "부두 낙상, 출혈, 탈수, 어지러움"
+  },
   "disease_hp": 28,
   "patient_hp": 26,
   "max_patient_hp": 26,

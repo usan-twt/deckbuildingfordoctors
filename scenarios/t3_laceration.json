@@ -1,5 +1,10 @@
 {
   "name": "T-3: 작업장 열상",
+  "patient": {
+    "name": "환자 03",
+    "info": "작업장 노동자 · 성인",
+    "chief_complaint": "우측 팔 깊은 열상, 극심한 통증"
+  },
   "disease_hp": 26,
   "patient_hp": 26,
   "max_patient_hp": 26,

@@ -2,23 +2,74 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>INTERN Combat Prototype</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #111; color: #ccc; font-family: monospace; font-size: 14px; padding: 16px; }
-    #log { white-space: pre-wrap; height: 70vh; overflow-y: auto; border: 1px solid #333; padding: 10px; margin-bottom: 10px; }
-    #input-row { display: flex; gap: 8px; }
-    #cmd { flex: 1; background: #222; color: #eee; border: 1px solid #444; padding: 6px 10px; font-family: monospace; font-size: 14px; }
-    button { background: #333; color: #eee; border: 1px solid #555; padding: 6px 16px; cursor: pointer; font-family: monospace; }
-    button:hover { background: #444; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INTERN</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="log"></div>
-  <div id="input-row">
-    <input id="cmd" type="text" placeholder="카드 번호 입력 (공백 구분) — 빈 입력 = 턴 종료" autocomplete="off" />
-    <button id="btn">확인</button>
+
+  <!-- 시나리오 선택 오버레이 -->
+  <div id="scenario-overlay" class="scenario-overlay">
+    <div class="scenario-modal">
+      <h2>INTERN</h2>
+      <div class="subtitle">전투 프로토타입 — 시나리오를 선택하세요</div>
+      <div id="scenario-list"></div>
+    </div>
   </div>
+
+  <!-- 로그 패널 -->
+  <div id="log-panel" class="log-panel hidden">
+    <div class="log-header">
+      <span>전투 로그</span>
+      <button id="btn-close-log">✕</button>
+    </div>
+    <pre id="log-content"></pre>
+  </div>
+
+  <!-- 메인 프레임 -->
+  <div class="frame" id="frame">
+
+    <div class="bg-illustration">
+      <span class="label">진료실</span>
+    </div>
+
+    <div class="info-box">
+      <div class="scenario-name" id="scenario-name">—</div>
+      <div class="turn-info" id="turn-info">준비 중</div>
+    </div>
+
+    <div class="patient-card">
+      <div class="name-row">
+        <div class="name" id="patient-name">—</div>
+      </div>
+      <div class="layer" id="patient-layer">—</div>
+      <div class="section-label">호소 증상</div>
+      <div class="complaint" id="patient-complaint">—</div>
+    </div>
+
+    <div class="vitals-panel" id="vitals-panel"></div>
+
+    <div class="combat-bar">
+      <div class="deck-panel" id="deck-panel"></div>
+      <div class="hand" id="hand"></div>
+      <div class="turn-controls">
+        <button class="turn-end" id="btn-turn-end" disabled>턴 종료</button>
+        <div class="small-ctrl" id="btn-log">로그</div>
+        <div class="small-ctrl" id="btn-deck-view">덱 보기</div>
+      </div>
+    </div>
+
+    <!-- 결과 오버레이 -->
+    <div id="result-overlay" class="result-overlay hidden">
+      <div class="result-box">
+        <div class="result-title" id="result-title">—</div>
+        <div class="result-detail" id="result-detail">—</div>
+        <button class="result-action" onclick="location.reload()">새 게임</button>
+      </div>
+    </div>
+
+  </div>
+
   <script src="game.js"></script>
 </body>
 </html>
