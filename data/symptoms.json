@@ -1,0 +1,37 @@
+{
+  "발열": {
+    "base_damage": 3,
+    "amplified_by": {"감염": 2, "탈수": 2},
+    "evolves_at": 5, "evolves_to": "고열경련"
+  },
+  "출혈": {
+    "base_damage": 3, "escalate": 2,
+    "trigger_on_suppress": {"통증": {"treatment_debuff": 1}},
+    "amplified_by": {"감염": 2},
+    "evolves_at": 3, "evolves_to": "출혈성쇼크"
+  },
+  "감염": {
+    "base_damage": 1,
+    "evolves_at": 4, "evolves_to": "패혈증"
+  },
+  "탈수": {
+    "base_damage": 1, "defense_reduce": 2,
+    "amplified_by": {"출혈": 1},
+    "transfer_on_suppress": {"발열": {"defense_reduce": 1}},
+    "evolves_at": 5, "evolves_to": "장기부전"
+  },
+  "통증": {
+    "base_damage": 0, "treatment_debuff": 1,
+    "amplified_by": {"": 0}
+  },
+  "호흡곤란": {
+    "base_damage": 0, "draw_reduce": 1,
+    "amplified_by": {"통증": 1},
+    "evolves_at": 3, "evolves_to": "호흡부전"
+  },
+  "고열경련":   {"base_damage": 5, "treatment_half": true},
+  "출혈성쇼크": {"base_damage": 8, "defense_half": true},
+  "패혈증":     {"base_damage": 0, "all_symptoms_bonus": 2, "suppress_reduce": 1},
+  "호흡부전":   {"base_damage": 3, "fixed_draw": 2},
+  "장기부전":   {"base_damage": 4, "defense_nullify": true}
+}
