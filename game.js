@@ -5,7 +5,7 @@ let SYMPTOMS = {};
 
 function buildCards(arr) {
   const out = {};
-  for (const c of arr) out[c.id] = { cost: c.cost, type: c.type, effect: c.effect };
+  for (const c of arr) out[c.id] = { cost: c.cost, type: c.type, desc: c.desc || '', effect: c.effect };
   return out;
 }
 
@@ -47,10 +47,11 @@ let G;
 
 function newGame(scenario) {
   G = {
-    diseaseHp: scenario.disease_hp,
-    patientHp: scenario.patient_hp,
-    maxHp:     scenario.max_patient_hp,
-    energyMax: scenario.energy_max,
+    diseaseHp:    scenario.disease_hp,
+    maxDiseaseHp: scenario.disease_hp,
+    patientHp:    scenario.patient_hp,
+    maxHp:        scenario.max_patient_hp,
+    energyMax:    scenario.energy_max,
     symptoms:  scenario.symptoms.map(name => ({ name, sup: 0, neglect: 0, escalate: 0 })),
     deck:      shuffle([...scenario.deck]),
     discard: [], hand: [], turn: 0,
@@ -279,19 +280,30 @@ async function runTurn() {
   return 'continue';
 }
 
+function hpBar(cur, max, width = 20) {
+  const filled = Math.round((Math.max(0, cur) / max) * width);
+  return '█'.repeat(filled) + '░'.repeat(width - filled);
+}
+
 function printStatus() {
   const symStr = G.symptoms.map(s =>
     s.sup > 0 ? `${s.name}[억제${s.sup}턴]` : `${s.name}[활성·방치${s.neglect}]`
   ).join('  ');
   print('═'.repeat(56));
-  print(`턴 ${G.turn} | 에너지 ${G.energy}/${G.energyMax} | 환자 HP ${G.patientHp}/${G.maxHp} | 본체 HP ${G.diseaseHp}`);
-  print(`증상: ${symStr}`);
+  print(`턴 ${G.turn}  |  에너지 ${G.energy}/${G.energyMax}`);
+  print(`  환자  ${hpBar(G.patientHp, G.maxHp)}  ${G.patientHp}/${G.maxHp}`);
+  print(`  본체  ${hpBar(G.diseaseHp, G.maxDiseaseHp)}  ${G.diseaseHp}/${G.maxDiseaseHp}`);
+  print(`  증상: ${symStr}`);
   print('═'.repeat(56));
 }
 
 function printHand() {
-  const hand = G.hand.map((id, i) => id ? `[${i}] ${id}(${CARDS[id].cost})` : null).filter(Boolean);
-  print('핸드: ' + hand.join('  ') + `  | 에너지 ${G.energy}/${G.energyMax}`);
+  print(`\n핸드 (에너지 ${G.energy}/${G.energyMax}):`);
+  G.hand.forEach((id, i) => {
+    if (!id) return;
+    const c = CARDS[id];
+    print(`  [${i}] ${id}(${c.cost}) — ${c.desc}`);
+  });
 }
 
 // ─── MAIN ────────────────────────────────────────────────────────────────────
