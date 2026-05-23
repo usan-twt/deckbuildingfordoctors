@@ -4,7 +4,6 @@
   "description": "INTERN 전투 시스템 프로토타입",
   "main": "main.js",
   "scripts": {
-    "start": "node main.js",
-    "simulate": "node simulate.js"
+    "start": "node main.js"
   }
 }
