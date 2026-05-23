@@ -261,6 +261,7 @@ async function runTurn() {
       if (G.energy < cost) { print(`  에너지 부족 (필요 ${cost}, 남은 ${G.energy})`); continue; }
       G.energy -= cost;
       G.hand[idx] = null;
+      G.discard.push(id);
       await playCard(id);
       if (G.diseaseHp <= 0) return 'win';
     }
