@@ -1,0 +1,6 @@
+{
+  "name": "deckbuildingfordoctors",
+  "scripts": {
+    "start": "npx serve ."
+  }
+}

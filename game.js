@@ -1,54 +1,59 @@
-// ─── DATA ────────────────────────────────────────────────────────────────────
+// ─── DATA (loaded from JSON) ─────────────────────────────────────────────────
 
-const CARDS = {
-  '투약':         { cost: 1, type: 'treatment', effect: { damage: 6 } },
-  '응급시술':     { cost: 2, type: 'treatment', effect: { damage: 12 } },
-  '대증처치':     { cost: 1, type: 'treatment', effect: { suppress: 'any', turns: 2 } },
-  '수액투여':     { cost: 1, type: 'stabilize', effect: { defense: 6 } },
-  '응급처치':     { cost: 1, type: 'stabilize', effect: { defense: 3, heal: 2 } },
-  '활력징후확인': { cost: 0, type: 'stabilize', effect: { defense: 2 } },
-  '경과관찰':     { cost: 0, type: 'stabilize', effect: { defense: 3 } },
-  '청진':         { cost: 0, type: 'support',   effect: { buff_next_treatment: 2 } },
-  '약재준비':     { cost: 1, type: 'support',   effect: { cost_reduce_next: 1 } },
-  '간호사호출':   { cost: 1, type: 'support',   effect: { draw: 2 } },
-  '환자면담':     { cost: 1, type: 'support',   effect: { reveal_all: true, buff_treatment: 2 } },
-};
+let CARDS = {};
+let SYMPTOMS = {};
 
-const SYMPTOMS = {
-  '발열':     { dmg: 3, amp: { '감염': 2, '탈수': 2 }, evolveAt: 5, evolveTo: '고열경련' },
-  '출혈':     { dmg: 3, escalate: 2, amp: { '감염': 2 }, triggerSuppress: { '통증': { treatDebuff: 1 } }, evolveAt: 3, evolveTo: '출혈성쇼크' },
-  '감염':     { dmg: 1, evolveAt: 4, evolveTo: '패혈증' },
-  '탈수':     { dmg: 1, defReduce: 2, amp: { '출혈': 1 }, transferSuppress: { '발열': { defReduce: 1 } }, evolveAt: 5, evolveTo: '장기부전' },
-  '통증':     { dmg: 0, treatDebuff: 1 },
-  '호흡곤란': { dmg: 0, drawReduce: 1, amp: { '통증': 1 }, evolveAt: 3, evolveTo: '호흡부전' },
-  // 진화형
-  '고열경련':   { dmg: 5, treatHalf: true },
-  '출혈성쇼크': { dmg: 8, defHalf: true },
-  '패혈증':     { dmg: 0, allBonus: 2, suppressReduce: 1 },
-  '호흡부전':   { dmg: 3, fixedDraw: 2 },
-  '장기부전':   { dmg: 4, defNullify: true },
-};
+function buildCards(arr) {
+  const out = {};
+  for (const c of arr) out[c.id] = { cost: c.cost, type: c.type, effect: c.effect };
+  return out;
+}
 
-const STARTER_DECK = [
-  '투약', '투약', '대증처치', '대증처치', '응급시술',
-  '수액투여', '수액투여', '응급처치', '활력징후확인', '경과관찰',
-  '청진', '청진', '약재준비', '간호사호출', '환자면담',
-];
+function buildSymptoms(raw) {
+  const out = {};
+  for (const [name, d] of Object.entries(raw)) {
+    const s = { dmg: d.base_damage || 0 };
+    if (d.escalate       != null) s.escalate       = d.escalate;
+    if (d.amplified_by)           s.amp             = d.amplified_by;
+    if (d.defense_reduce != null) s.defReduce       = d.defense_reduce;
+    if (d.treatment_debuff != null) s.treatDebuff   = d.treatment_debuff;
+    if (d.draw_reduce    != null) s.drawReduce      = d.draw_reduce;
+    if (d.treatment_half)         s.treatHalf       = true;
+    if (d.defense_half)           s.defHalf         = true;
+    if (d.all_symptoms_bonus != null) s.allBonus    = d.all_symptoms_bonus;
+    if (d.suppress_reduce != null)  s.suppressReduce = d.suppress_reduce;
+    if (d.fixed_draw     != null) s.fixedDraw       = d.fixed_draw;
+    if (d.defense_nullify)        s.defNullify      = true;
+    if (d.evolves_at     != null) s.evolveAt        = d.evolves_at;
+    if (d.evolves_to)             s.evolveTo        = d.evolves_to;
+    if (d.trigger_on_suppress) {
+      s.triggerSuppress = {};
+      for (const [tgt, ef] of Object.entries(d.trigger_on_suppress))
+        s.triggerSuppress[tgt] = { treatDebuff: ef.treatment_debuff || 0 };
+    }
+    if (d.transfer_on_suppress) {
+      s.transferSuppress = {};
+      for (const [tgt, ef] of Object.entries(d.transfer_on_suppress))
+        s.transferSuppress[tgt] = { defReduce: ef.defense_reduce || 0 };
+    }
+    out[name] = s;
+  }
+  return out;
+}
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 
-let G; // 전투 상태
+let G;
 
-function newGame() {
+function newGame(scenario) {
   G = {
-    diseaseHp: 28, patientHp: 30, maxHp: 30, energyMax: 2,
-    symptoms: [
-      { name: '발열',  sup: 0, neglect: 0, escalate: 0 },
-      { name: '탈수',  sup: 0, neglect: 0, escalate: 0 },
-    ],
-    deck: shuffle([...STARTER_DECK]),
+    diseaseHp: scenario.disease_hp,
+    patientHp: scenario.patient_hp,
+    maxHp:     scenario.max_patient_hp,
+    energyMax: scenario.energy_max,
+    symptoms:  scenario.symptoms.map(name => ({ name, sup: 0, neglect: 0, escalate: 0 })),
+    deck:      shuffle([...scenario.deck]),
     discard: [], hand: [], turn: 0,
-    // 턴 버프
     treatBuff: 0, treatDebuff: 0, defTotal: 0, defReduce: 0, costReduce: 0,
   };
 }
@@ -147,7 +152,6 @@ function symptomPhase() {
   G.patientHp -= net;
   G.defTotal = 0;
 
-  // 억제 카운트다운 + 방치 진화
   for (const s of G.symptoms) {
     const d = SYMPTOMS[s.name] || {};
     if (s.sup > 0) { s.sup--; s.neglect = 0; }
@@ -193,7 +197,7 @@ async function playCard(id) {
 
   } else if (c.type === 'stabilize') {
     if (e.defense) { G.defTotal += e.defense; print(`    방어 +${e.defense} (누적 ${G.defTotal})`); }
-    if (e.heal) { G.patientHp = Math.min(G.maxHp, G.patientHp + e.heal); print(`    환자 +${e.heal} HP → ${G.patientHp}`); }
+    if (e.heal)    { G.patientHp = Math.min(G.maxHp, G.patientHp + e.heal); print(`    환자 +${e.heal} HP → ${G.patientHp}`); }
 
   } else if (c.type === 'support') {
     if (e.buff_next_treatment) { G.treatBuff += e.buff_next_treatment; print(`    다음 치료 +${e.buff_next_treatment}`); }
@@ -230,7 +234,6 @@ async function runTurn() {
   G.treatBuff = 0; G.treatDebuff = 0;
   G.defTotal = 0;  G.defReduce = 0; G.costReduce = 0;
 
-  // 드로우 수
   let drawN = 4;
   for (const s of G.symptoms) {
     if (s.sup !== 0) continue;
@@ -244,7 +247,6 @@ async function runTurn() {
 
   printStatus();
 
-  // 카드 플레이 루프
   while (true) {
     printHand();
     const inp = await waitInput();
@@ -294,7 +296,22 @@ function printHand() {
 // ─── MAIN ────────────────────────────────────────────────────────────────────
 
 (async () => {
-  newGame();
+  try {
+    const [cardsRaw, symptomsRaw, scenario] = await Promise.all([
+      fetch('./data/cards.json').then(r => r.json()),
+      fetch('./data/symptoms.json').then(r => r.json()),
+      fetch('./scenarios/tutorial.json').then(r => r.json()),
+    ]);
+    CARDS    = buildCards(cardsRaw);
+    SYMPTOMS = buildSymptoms(symptomsRaw);
+    newGame(scenario);
+  } catch (err) {
+    print('데이터 로딩 실패: ' + err.message);
+    print('서버에서 실행해주세요 (file:// 비지원).');
+    cmdEl.disabled = true;
+    return;
+  }
+
   print('[ INTERN 전투 프로토타입 — 급성 악화 감기 ]');
   print('카드 번호를 공백으로 구분해 입력. 빈 입력 = 턴 종료.\n');
 
