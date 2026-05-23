@@ -1,9 +1,5 @@
 {
   "name": "intern-combat",
   "version": "1.0.0",
-  "description": "INTERN 전투 시스템 프로토타입",
-  "main": "main.js",
-  "scripts": {
-    "start": "node main.js"
-  }
+  "description": "INTERN 전투 시스템 프로토타입"
 }
