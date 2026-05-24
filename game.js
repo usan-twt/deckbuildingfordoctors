@@ -6,7 +6,7 @@ let BASE_SYMPTOMS = {};
 
 function buildCards(arr) {
   const out = {};
-  for (const c of arr) out[c.id] = { cost: c.cost, type: c.type, desc: c.desc || '', effect: c.effect };
+  for (const c of arr) out[c.id] = { cost: c.cost, type: c.type, discipline: c.discipline || '공통', desc: c.desc || '', effect: c.effect };
   return out;
 }
 
@@ -90,6 +90,8 @@ let _playingCard = false;
 let _turnEndResolver = null;
 let _symptomPickResolver = null;
 let _pickingSymptom = false;
+let _discardPickResolver = null;
+let _pickingDiscard = false;
 
 function waitTurnEnd() {
   return new Promise(r => { _turnEndResolver = r; });
@@ -101,6 +103,12 @@ function waitSymptomPick() {
   return new Promise(r => { _symptomPickResolver = r; });
 }
 
+function waitDiscardPick() {
+  _pickingDiscard = true;
+  renderHand();
+  return new Promise(r => { _discardPickResolver = r; });
+}
+
 function setTurnActive(on) {
   _turnActive = on;
   document.getElementById('btn-turn-end').disabled = !on;
@@ -108,6 +116,20 @@ function setTurnActive(on) {
 }
 
 async function handleCardClick(idx) {
+  if (_pickingDiscard) {
+    const id = G.hand[idx];
+    if (!id) return;
+    G.hand[idx] = null;
+    G.discard.push(id);
+    G.hand = G.hand.filter(Boolean);
+    log(`  ${id} 버림`);
+    _pickingDiscard = false;
+    renderHand();
+    const resolve = _discardPickResolver;
+    _discardPickResolver = null;
+    resolve(id);
+    return;
+  }
   if (!_turnActive || _playingCard) return;
   const id = G.hand[idx];
   if (!id) return;
@@ -216,6 +238,21 @@ async function playCard(id) {
   log(`> ${id}`);
 
   if (c.type === 'treatment') {
+    if (e.suppress_symptom) {
+      const target = getSym(e.suppress_symptom);
+      if (target && target.sup === 0) {
+        let turns = e.suppress_turns || 2;
+        const sep = getSym('패혈증');
+        if (sep && sep.sup === 0) turns = Math.max(1, turns + (SYMPTOMS['패혈증'].suppressReduce || 0));
+        target.sup = turns; target.neglect = 0; target.escalate = 0;
+        log(`  ${e.suppress_symptom} ${turns}턴 억제`);
+        triggerSuppress(e.suppress_symptom);
+      } else {
+        log(`  ${e.suppress_symptom} 비활성 (효과 반쪽)`);
+      }
+      if (e.add_symptom) addSymptom(e.add_symptom);
+      return;
+    }
     if (e.suppress) { await doSuppress(e); return; }
     let dmg = e.damage || 0;
     for (const s of G.symptoms)
@@ -227,6 +264,11 @@ async function playCard(id) {
 
   } else if (c.type === 'stabilize') {
     if (e.defense) { G.defTotal += e.defense; log(`  방어 +${e.defense} (누적 ${G.defTotal})`); }
+    if (e.defense_if_active) {
+      for (const [sym, bonus] of Object.entries(e.defense_if_active)) {
+        if (activeNames().has(sym)) { G.defTotal += bonus; log(`  조건부 방어 +${bonus} (${sym} 활성)`); }
+      }
+    }
     if (e.heal)    { G.patientHp = Math.min(G.maxHp, G.patientHp + e.heal); log(`  환자 +${e.heal} HP`); }
 
   } else if (c.type === 'support') {
@@ -234,6 +276,23 @@ async function playCard(id) {
     if (e.cost_reduce_next)    { G.costReduce += e.cost_reduce_next;   log(`  다음 코스트 -${e.cost_reduce_next}`); }
     if (e.draw)                { drawCards(e.draw); log(`  ${e.draw}장 드로우`); }
     if (e.buff_treatment)      { G.treatBuff += e.buff_treatment;       log(`  이번 턴 치료 +${e.buff_treatment}`); }
+    if (e.discard_from_hand) {
+      if (G.hand.filter(Boolean).length > 0) {
+        log('  버릴 카드를 클릭하세요');
+        await waitDiscardPick();
+      }
+    }
+  }
+}
+
+function addSymptom(name) {
+  const existing = G.symptoms.find(s => s.name === name);
+  if (existing) {
+    if (existing.sup === 0) { log(`  ${name} 이미 활성`); return; }
+    existing.sup = 0; log(`  ${name} 재활성화`);
+  } else {
+    G.symptoms.push({ name, sup: 0, neglect: 0, escalate: 0 });
+    log(`  ${name} 부여`);
   }
 }
 
@@ -257,7 +316,6 @@ async function doSuppress(effect) {
 
 // ─── RENDER ──────────────────────────────────────────────────────────────────
 
-const TYPE_LABEL = { treatment: '치료', stabilize: '안정', support: '지원' };
 
 function renderAll() {
   renderInfo();
@@ -354,14 +412,16 @@ function renderHand() {
     const canPlay = _turnActive && !_playingCard && G.energy >= cost;
 
     const card = document.createElement('div');
-    card.className = `hand-card type-${c.type}${canPlay ? '' : ' disabled'}`;
+    const isDiscardPick = _pickingDiscard;
+    card.className = `hand-card disc-${c.discipline}` +
+      (isDiscardPick ? ' discard-pick' : (canPlay ? '' : ' disabled'));
     card.innerHTML = `
       <div class="cost">${cost}</div>
-      <div class="attr">${TYPE_LABEL[c.type] || c.type}</div>
+      <div class="attr">${c.discipline}</div>
       <div class="card-name">${id}</div>
       <div class="effect">${c.desc}</div>
     `;
-    if (canPlay) card.addEventListener('click', () => handleCardClick(idx));
+    if (isDiscardPick || canPlay) card.addEventListener('click', () => handleCardClick(idx));
     handEl.appendChild(card);
   });
 }

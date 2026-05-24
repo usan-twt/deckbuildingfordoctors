@@ -13,6 +13,9 @@
   --treatment: #8b2e2e;
   --stabilize: #2e5a4a;
   --support: #5a4a1a;
+  --disc-공통: #6b5a4a;
+  --disc-내과: #2e4a6b;
+  --disc-외과: #8b2e2e;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -320,12 +323,14 @@ body {
   letter-spacing: 1.5px;
   text-align: right;
 }
-.hand-card.type-treatment { border-top: 3px solid var(--treatment); }
-.hand-card.type-stabilize  { border-top: 3px solid var(--stabilize); }
-.hand-card.type-support    { border-top: 3px solid var(--support); }
-.hand-card.type-treatment .attr { color: var(--treatment); }
-.hand-card.type-stabilize .attr  { color: var(--stabilize); }
-.hand-card.type-support .attr    { color: var(--support); }
+.hand-card.disc-공통 { border-top: 3px solid var(--disc-공통); }
+.hand-card.disc-내과 { border-top: 3px solid var(--disc-내과); }
+.hand-card.disc-외과 { border-top: 3px solid var(--disc-외과); }
+.hand-card.disc-공통 .attr { color: var(--disc-공통); }
+.hand-card.disc-내과 .attr { color: var(--disc-내과); }
+.hand-card.disc-외과 .attr { color: var(--disc-외과); }
+.hand-card.discard-pick { border-top: 3px solid var(--danger); cursor: pointer; }
+.hand-card.discard-pick:hover { opacity: 0.75; }
 .hand-card .card-name {
   font-size: 13px;
   font-weight: 600;
@@ -339,6 +344,7 @@ body {
   font-size: 10px;
   line-height: 1.5;
   flex: 1;
+  white-space: pre-wrap;
 }
 
 /* Turn controls */
