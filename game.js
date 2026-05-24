@@ -46,6 +46,9 @@ function buildSymptoms(raw) {
 // ─── STATE ───────────────────────────────────────────────────────────────────
 
 let G;
+let playerPool = {};
+let playerDeck = [];
+let _pendingScenario = null;
 
 function newGame(scenario) {
   SYMPTOMS = { ...BASE_SYMPTOMS };
@@ -58,10 +61,26 @@ function newGame(scenario) {
     maxHp:        scenario.max_patient_hp,
     energyMax:    scenario.energy_max,
     symptoms:  scenario.symptoms.map(name => ({ name, sup: 0, neglect: 0, escalate: 0 })),
-    deck:      shuffle([...scenario.deck]),
+    deck:      shuffle([...playerDeck]),
     discard: [], hand: [], turn: 0,
     treatBuff: 0, treatDebuff: 0, defTotal: 0, defReduce: 0, costReduce: 0,
   };
+}
+
+function initPool() {
+  playerPool = {};
+  for (const id of [
+    '투약', '투약', '대증처치', '수액투여', '응급처치',
+    '활력징후확인', '청진', '약재준비', '간호사호출', '환자면담',
+    '응급시술', '소작술', '집중', '지혈압박', '상처확인',
+  ]) playerPool[id] = (playerPool[id] || 0) + 1;
+}
+
+function getDefaultDeck() {
+  const deck = [];
+  for (const [id, n] of Object.entries(playerPool))
+    for (let i = 0; i < n; i++) deck.push(id);
+  return deck;
 }
 
 function shuffle(a) {
@@ -473,6 +492,78 @@ function showResult(title, detail) {
   document.getElementById('result-overlay').classList.remove('hidden');
 }
 
+function renderDeckBuilder() {
+  const inDeckCount = {};
+  for (const id of playerDeck) inDeckCount[id] = (inDeckCount[id] || 0) + 1;
+
+  // ── 보유 카드 풀 ──
+  const poolEl = document.getElementById('db-pool');
+  poolEl.innerHTML = '';
+
+  for (const disc of ['공통', '내과', '외과']) {
+    const cardIds = Object.keys(playerPool).filter(id => CARDS[id]?.discipline === disc);
+    if (!cardIds.length) continue;
+
+    const grp = document.createElement('div');
+    grp.className = 'db-disc-group';
+    grp.innerHTML = `<div class="db-disc-label disc-${disc}">${disc}</div>`;
+
+    for (const id of cardIds) {
+      const avail = playerPool[id] - (inDeckCount[id] || 0);
+      const c = CARDS[id];
+      const el = document.createElement('div');
+      el.className = 'db-pool-card' + (avail <= 0 ? ' exhausted' : '');
+      el.innerHTML = `
+        <span class="db-pc-cost">${c.cost}</span>
+        <span class="db-pc-info">
+          <span class="db-pc-name">${id}</span>
+          <span class="db-pc-desc">${c.desc.replace(/\n/g, ' ')}</span>
+        </span>
+        <span class="db-pc-avail">${avail > 0 ? `+${avail}` : '—'}</span>
+      `;
+      if (avail > 0) el.addEventListener('click', () => { playerDeck.push(id); renderDeckBuilder(); });
+      grp.appendChild(el);
+    }
+    poolEl.appendChild(grp);
+  }
+
+  // ── 현재 덱 ──
+  const listEl = document.getElementById('db-deck-list');
+  listEl.innerHTML = '';
+
+  const grouped = {};
+  for (const id of playerDeck) grouped[id] = (grouped[id] || 0) + 1;
+
+  const discOrder = { 공통: 0, 내과: 1, 외과: 2 };
+  const sorted = Object.entries(grouped).sort(([a], [b]) =>
+    (discOrder[CARDS[a]?.discipline] || 0) - (discOrder[CARDS[b]?.discipline] || 0) ||
+    a.localeCompare(b, 'ko')
+  );
+
+  for (const [id, cnt] of sorted) {
+    const c = CARDS[id];
+    const item = document.createElement('div');
+    item.className = 'db-deck-item';
+    item.innerHTML = `
+      <span class="db-di-dot disc-dot-${c.discipline}"></span>
+      <span class="db-di-name">${id}${cnt > 1 ? ` ×${cnt}` : ''}</span>
+      <button class="db-di-remove">✕</button>
+    `;
+    item.querySelector('.db-di-remove').addEventListener('click', () => {
+      const idx = playerDeck.lastIndexOf(id);
+      if (idx !== -1) playerDeck.splice(idx, 1);
+      renderDeckBuilder();
+    });
+    listEl.appendChild(item);
+  }
+
+  const n = playerDeck.length;
+  const countEl = document.getElementById('db-deck-count');
+  countEl.textContent = `${n}장`;
+  countEl.className = n < 10 ? 'warn' : '';
+  document.getElementById('btn-start-battle').disabled = n < 10;
+}
+
 // ─── TURN ────────────────────────────────────────────────────────────────────
 
 async function runTurn() {
@@ -531,6 +622,7 @@ const SCENARIO_LIST = [
     ]);
     CARDS         = buildCards(cardsRaw);
     BASE_SYMPTOMS = buildSymptoms(symptomsRaw);
+    initPool();
   } catch (err) {
     document.getElementById('scenario-overlay').innerHTML =
       `<div style="padding:40px;font-family:monospace">데이터 로딩 실패: ${err.message}<br>서버에서 실행해주세요.</div>`;
@@ -563,6 +655,20 @@ const SCENARIO_LIST = [
     log('\n[덱 전체] ' + all.join(', '));
     document.getElementById('log-panel').classList.remove('hidden');
   });
+
+  document.getElementById('btn-default-deck').addEventListener('click', () => {
+    playerDeck = getDefaultDeck();
+    renderDeckBuilder();
+  });
+  document.getElementById('btn-start-battle').addEventListener('click', () => {
+    document.getElementById('deck-builder').classList.add('hidden');
+    runScenario(_pendingScenario);
+  });
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    document.getElementById('result-overlay').classList.add('hidden');
+    document.getElementById('deck-builder').classList.remove('hidden');
+    renderDeckBuilder();
+  });
 })();
 
 async function startScenario(idx) {
@@ -575,11 +681,20 @@ async function startScenario(idx) {
     return;
   }
 
+  _pendingScenario = scenario;
+  playerDeck = getDefaultDeck();
+
   document.getElementById('scenario-overlay').classList.add('hidden');
+  document.getElementById('db-scenario-label').textContent = chosen.name;
+  document.getElementById('deck-builder').classList.remove('hidden');
+  renderDeckBuilder();
+}
+
+async function runScenario(scenario) {
   newGame(scenario);
   renderPatient(scenario);
 
-  log(`[ ${chosen.name} ]`);
+  log(`[ ${scenario.name} ]`);
   log('카드를 클릭해 플레이. 턴 종료 버튼으로 다음 단계.\n');
 
   while (true) {

@@ -17,6 +17,35 @@
     </div>
   </div>
 
+  <!-- 덱 편성 오버레이 -->
+  <div id="deck-builder" class="deck-builder hidden">
+    <div class="db-modal">
+      <div class="db-header">
+        <div>
+          <div class="db-title">덱 편성</div>
+          <div class="db-scenario-label" id="db-scenario-label"></div>
+        </div>
+        <div class="db-count-area">
+          <span id="db-deck-count">0장</span>
+        </div>
+      </div>
+      <div class="db-body">
+        <div class="db-pool-wrap">
+          <div class="db-section-title">보유 카드</div>
+          <div class="db-pool" id="db-pool"></div>
+        </div>
+        <div class="db-deck-wrap">
+          <div class="db-section-title">현재 덱</div>
+          <div class="db-deck-list" id="db-deck-list"></div>
+          <div class="db-actions">
+            <button id="btn-default-deck" class="db-btn">기본 덱</button>
+            <button id="btn-start-battle" class="db-btn primary" disabled>전투 시작</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 로그 패널 -->
   <div id="log-panel" class="log-panel hidden">
     <div class="log-header">
@@ -64,7 +93,7 @@
       <div class="result-box">
         <div class="result-title" id="result-title">—</div>
         <div class="result-detail" id="result-detail">—</div>
-        <button class="result-action" onclick="location.reload()">새 게임</button>
+        <button class="result-action" id="btn-restart">다시 하기</button>
       </div>
     </div>
 
