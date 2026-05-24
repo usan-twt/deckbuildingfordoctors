@@ -329,6 +329,36 @@ function renderInfo() {
     `턴 ${G.turn}  ·  에너지 ${G.energy} / ${G.energyMax}`;
 }
 
+function computeSymptomIntent(s) {
+  if (s.sup > 0) return '';
+  const an = activeNames();
+  const d = SYMPTOMS[s.name] || {};
+  const parts = [];
+
+  let dmg = d.dmg || 0;
+  if (d.escalate) dmg += d.escalate * s.escalate;
+  for (const [src, val] of Object.entries(d.amp || {}))
+    if (an.has(src)) dmg += val;
+  if (an.has('패혈증') && s.name !== '패혈증')
+    dmg += SYMPTOMS['패혈증']?.allBonus || 0;
+  if (dmg > 0) parts.push(`HP -${dmg}`);
+
+  if (d.defReduce || d.defReduceAmp) {
+    let r = d.defReduce || 0;
+    for (const [src, val] of Object.entries(d.defReduceAmp || {}))
+      if (an.has(src)) r += val;
+    if (r > 0) parts.push(`방어 -${r}`);
+  }
+
+  if (d.treatDebuff) parts.push(`치료 -${d.treatDebuff}`);
+  if (d.drawReduce)  parts.push(`드로우 -${d.drawReduce}`);
+  if (d.defHalf)     parts.push('방어 ½');
+  if (d.treatHalf)   parts.push('치료 ½');
+  if (d.defNullify)  parts.push('방어 무효');
+
+  return parts.join('  ');
+}
+
 function renderVitals() {
   const panel = document.getElementById('vitals-panel');
   const pPct = Math.max(0, (G.patientHp / G.maxHp) * 100).toFixed(1);
@@ -340,10 +370,13 @@ function renderVitals() {
     const stateClass = isActive ? 'is-active' : 'is-suppressed';
     const pickClass = canPick ? ' pickable' : '';
     const timer = isActive ? `방치 ${s.neglect}턴` : `억제 ${s.sup}턴 남음`;
-    const sym = s.name;
-    return `<div class="cond ${stateClass}${pickClass}" data-sym="${sym}">
-      <span class="cond-name">${sym}</span>
-      <span class="timer">${timer}</span>
+    const intent = computeSymptomIntent(s);
+    return `<div class="cond ${stateClass}${pickClass}" data-sym="${s.name}">
+      <div class="cond-row">
+        <span class="cond-name">${s.name}</span>
+        <span class="timer">${timer}</span>
+      </div>
+      ${intent ? `<div class="cond-intent">${intent}</div>` : ''}
     </div>`;
   }).join('');
 

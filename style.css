@@ -186,21 +186,31 @@ body {
   color: var(--note);
 }
 .cond {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 5px 0;
   font-size: 12px;
   border-bottom: 1px dashed var(--line);
 }
 .cond:last-child { border-bottom: none; }
+.cond-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 .cond .cond-name { font-weight: 500; }
 .cond .timer {
   font-family: 'SF Mono', Menlo, monospace;
   font-size: 11px;
   color: var(--text-light);
 }
-.cond.is-active .timer { color: var(--danger); }
+.cond.is-active .timer { color: var(--text-light); }
+.cond-intent {
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  color: var(--danger);
+  font-weight: 600;
+  text-align: right;
+  margin-top: 1px;
+}
 .cond.is-suppressed { opacity: 0.45; }
 .cond.pickable {
   cursor: pointer;
