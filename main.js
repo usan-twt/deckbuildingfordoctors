@@ -3,6 +3,7 @@ import { buildCards, buildSymptoms } from './src/data.js';
 import { initPool, getDefaultDeck, setDeck, playerDeck } from './src/deck.js';
 import * as engine from './src/engine.js';
 import { renderPatient, showResult, renderDeckBuilder } from './src/render.js';
+import { initBalanceStudio, openBalanceStudio } from './src/balance-ui.js';
 
 const SCENARIO_LIST = [
   { file: 'tutorial',          name: 'T-1: 급성 악화 감기', meta: '본체 28HP · 환자 30HP · 발열+탈수' },
@@ -63,6 +64,7 @@ async function runScenario(scenario) {
     ]);
     engine.loadData(buildCards(cardsRaw), buildSymptoms(symptomsRaw));
     initPool();
+    initBalanceStudio();
   } catch (err) {
     document.getElementById('scenario-overlay').innerHTML =
       `<div style="padding:40px;font-family:monospace">데이터 로딩 실패: ${err.message}<br>서버에서 실행해주세요.</div>`;
@@ -95,6 +97,9 @@ async function runScenario(scenario) {
     document.getElementById('log-panel').classList.remove('hidden');
   });
 
+  document.getElementById('btn-simulate').addEventListener('click', () => {
+    if (_pendingScenario) openBalanceStudio(_pendingScenario, [...playerDeck]);
+  });
   document.getElementById('btn-default-deck').addEventListener('click', () => {
     setDeck(getDefaultDeck());
     renderDeckBuilder();

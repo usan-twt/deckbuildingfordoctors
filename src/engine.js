@@ -318,6 +318,7 @@ export async function runTurn() {
   G.hand = [];
   drawCards(drawN);
 
+  _simStrategy?.onTurnStart?.({ turn: G.turn, patientHp: G.patientHp, diseaseHp: G.diseaseHp });
   log(`\n── 턴 ${G.turn} ──`);
   _turnActive = true;
   emit('state:changed');
@@ -342,7 +343,7 @@ async function waitTurnEnd() {
   if (_simStrategy) {
     while (true) {
       if (G.diseaseHp <= 0) return 'win';
-      const idx = _simStrategy.chooseCard(G, CARDS);
+      const idx = _simStrategy.chooseCard(G, CARDS, SYMPTOMS);
       if (idx === -1) break;
       const id = G.hand[idx];
       if (!id) break;

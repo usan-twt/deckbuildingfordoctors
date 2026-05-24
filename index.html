@@ -39,11 +39,112 @@
           <div class="db-deck-list" id="db-deck-list"></div>
           <div class="db-actions">
             <button id="btn-default-deck" class="db-btn">기본 덱</button>
+            <button id="btn-simulate" class="db-btn">시뮬레이션</button>
             <button id="btn-start-battle" class="db-btn primary" disabled>전투 시작</button>
           </div>
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- 시뮬레이션 스튜디오 -->
+  <div id="balance-studio" class="balance-studio hidden">
+    <div class="bs-header">
+      <div class="bs-title-area">
+        <span class="bs-title">시뮬레이션 스튜디오</span>
+        <span id="bs-scenario-label" class="bs-scenario-label">—</span>
+        <span id="bs-status" class="bs-status"></span>
+      </div>
+      <button id="bs-close" class="bs-close-btn">✕</button>
+    </div>
+
+    <div class="bs-tab-bar">
+      <button class="bs-tab-btn active" data-tab="setup">설정</button>
+      <button class="bs-tab-btn" data-tab="scatter">산점도</button>
+      <button class="bs-tab-btn" data-tab="winrate">승률</button>
+      <button class="bs-tab-btn" data-tab="hpcurve">HP 곡선</button>
+    </div>
+
+    <!-- 설정 탭 -->
+    <div class="bs-tab-pane" data-tab="setup">
+      <div class="bs-setup-body">
+
+        <div class="bs-setup-col">
+          <div class="bs-section-title">시나리오 파라미터</div>
+          <div class="bs-range-row">
+            <label class="bs-range-label">본체 HP</label>
+            <div class="bs-range-wrap">
+              <input type="range" id="bs-disease-hp" min="10" max="50" value="28">
+              <span class="bs-range-val">28</span>
+            </div>
+          </div>
+          <div class="bs-range-row">
+            <label class="bs-range-label">환자 HP</label>
+            <div class="bs-range-wrap">
+              <input type="range" id="bs-patient-hp" min="10" max="50" value="26">
+              <span class="bs-range-val">26</span>
+            </div>
+          </div>
+          <div class="bs-range-row">
+            <label class="bs-range-label">에너지/턴</label>
+            <div class="bs-range-wrap">
+              <input type="range" id="bs-energy-max" min="1" max="5" value="2">
+              <span class="bs-range-val">2</span>
+            </div>
+          </div>
+
+          <div class="bs-section-title mt16">증상 구성</div>
+          <div id="bs-symptom-checks" class="bs-symptom-checks"></div>
+
+          <button id="bs-reset" class="bs-btn mt16">기본값 복원</button>
+        </div>
+
+        <div class="bs-setup-col">
+          <div class="bs-section-title">페르소나</div>
+          <div class="bs-persona-list">
+            <label class="bs-persona-label"><input type="checkbox" class="bs-persona-check" value="rush"      checked> <span class="bs-persona-dot" style="background:#c0392b"></span> 러쉬</label>
+            <label class="bs-persona-label"><input type="checkbox" class="bs-persona-check" value="safe"      checked> <span class="bs-persona-dot" style="background:#2980b9"></span> 안정</label>
+            <label class="bs-persona-label"><input type="checkbox" class="bs-persona-check" value="control"   checked> <span class="bs-persona-dot" style="background:#8e44ad"></span> 컨트롤</label>
+            <label class="bs-persona-label"><input type="checkbox" class="bs-persona-check" value="efficient" checked> <span class="bs-persona-dot" style="background:#27ae60"></span> 효율</label>
+          </div>
+
+          <div class="bs-section-title mt16">판수</div>
+          <div class="bs-range-wrap">
+            <input type="range" id="bs-nruns" min="50" max="500" step="50" value="200">
+            <span class="bs-range-val">200</span>
+          </div>
+
+          <div id="bs-progress" class="bs-progress hidden">
+            <div id="bs-progress-fill" class="bs-progress-fill"></div>
+          </div>
+
+          <button id="bs-run" class="bs-btn primary mt16">▶ 실행</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 산점도 탭 -->
+    <div class="bs-tab-pane hidden" data-tab="scatter">
+      <div class="bs-chart-area">
+        <canvas id="bs-scatter-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- 승률 탭 -->
+    <div class="bs-tab-pane hidden" data-tab="winrate">
+      <div class="bs-chart-area">
+        <canvas id="bs-winrate-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- HP 곡선 탭 -->
+    <div class="bs-tab-pane hidden" data-tab="hpcurve">
+      <div class="bs-chart-area">
+        <canvas id="bs-hpcurve-canvas"></canvas>
+      </div>
+    </div>
+
   </div>
 
   <!-- 로그 패널 -->
@@ -99,6 +200,7 @@
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script type="module" src="main.js"></script>
 </body>
 </html>
