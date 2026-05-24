@@ -1,6 +1,31 @@
 import * as engine from './engine.js';
 import { PERSONAS } from './personas.js';
 
+function withEditorOverrides(cardOverrides, symptomOverrides, fn) {
+  if (cardOverrides) {
+    const patched = {};
+    for (const [id, c] of Object.entries(engine.CARDS)) {
+      const ov = cardOverrides[id];
+      patched[id] = ov
+        ? { ...c, ...(ov.cost != null ? { cost: ov.cost } : {}), effect: { ...c.effect, ...(ov.effect || {}) } }
+        : c;
+    }
+    engine.swapCards(patched);
+  }
+  if (symptomOverrides) {
+    const patched = {};
+    for (const [name, s] of Object.entries(engine.BASE_SYMPTOMS)) {
+      const ov = symptomOverrides[name];
+      patched[name] = ov ? { ...s, ...ov } : s;
+    }
+    engine.swapBaseSymptoms(patched);
+  }
+  return fn().finally(() => {
+    if (cardOverrides)    engine.restoreCards();
+    if (symptomOverrides) engine.restoreBaseSymptoms();
+  });
+}
+
 export function applyOverrides(base, ov) {
   const s = { ...base };
   if (ov.diseaseHp != null) s.disease_hp = ov.diseaseHp;
@@ -47,7 +72,12 @@ async function runPersona(scenario, deck, persona, nRuns, onProgress, progressOf
   return games;
 }
 
-export async function runBalance(baseScenario, deck, overrides, personaKeys, nRuns, onProgress) {
+export async function runBalance(baseScenario, deck, overrides, personaKeys, nRuns, onProgress, cardOverrides = null, symptomOverrides = null) {
+  return withEditorOverrides(cardOverrides, symptomOverrides,
+    () => _runBalance(baseScenario, deck, overrides, personaKeys, nRuns, onProgress));
+}
+
+async function _runBalance(baseScenario, deck, overrides, personaKeys, nRuns, onProgress) {
   const scenario = applyOverrides(baseScenario, overrides);
   const allResults = {};
   let offset = 0;
@@ -88,7 +118,12 @@ export function aggregateCardStats(games) {
   return perCard;
 }
 
-export async function runImpactAnalysis(baseScenario, deck, overrides, personaKey, nRuns, onProgress) {
+export async function runImpactAnalysis(baseScenario, deck, overrides, personaKey, nRuns, onProgress, cardOverrides = null, symptomOverrides = null) {
+  return withEditorOverrides(cardOverrides, symptomOverrides,
+    () => _runImpactAnalysis(baseScenario, deck, overrides, personaKey, nRuns, onProgress));
+}
+
+async function _runImpactAnalysis(baseScenario, deck, overrides, personaKey, nRuns, onProgress) {
   const scenario = applyOverrides(baseScenario, overrides);
   const { persona } = PERSONAS[personaKey];
 

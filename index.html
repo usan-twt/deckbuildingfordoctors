@@ -65,6 +65,7 @@
       <button class="bs-tab-btn" data-tab="hpcurve">HP 곡선</button>
       <button class="bs-tab-btn" data-tab="cardanalysis">카드 분석</button>
       <button class="bs-tab-btn" data-tab="impact">임팩트</button>
+      <button class="bs-tab-btn" data-tab="edit">편집</button>
     </div>
 
     <!-- 설정 탭 -->
@@ -193,6 +194,30 @@
       </div>
       <div class="bs-chart-area">
         <canvas id="bs-impact-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- 편집 탭 -->
+    <div class="bs-tab-pane hidden" data-tab="edit">
+      <div class="bs-edit-body">
+        <div class="bs-edit-col">
+          <div class="bs-edit-col-header">
+            <span class="bs-section-title">카드 편집</span>
+            <button id="bs-reset-all-cards" class="bs-inline-btn">전체 초기화</button>
+          </div>
+          <div id="bs-card-editor" class="bs-editor-list"></div>
+        </div>
+        <div class="bs-edit-col">
+          <div class="bs-edit-col-header">
+            <span class="bs-section-title">증상 편집</span>
+            <button id="bs-reset-all-symptoms" class="bs-inline-btn">전체 초기화</button>
+          </div>
+          <div id="bs-symptom-editor" class="bs-editor-list"></div>
+        </div>
+      </div>
+      <div class="bs-edit-footer">
+        <div id="bs-edit-status" class="bs-edit-status">시뮬레이션 실행 시 현재 편집값이 적용됩니다.</div>
+        <button id="bs-edit-run" class="bs-btn primary">▶ 변경 적용 후 재실행</button>
       </div>
     </div>
 

@@ -2,6 +2,7 @@ import * as engine from './engine.js';
 import { runBalance, runImpactAnalysis, applyOverrides } from './balance.js';
 import { drawScatter, drawWinRate, drawHpCurves, drawCardUsage, drawCardHeatmap, drawCardImpact } from './charts.js';
 import { PERSONAS } from './personas.js';
+import { initEditTab, renderEditTab, getCardOverrides, getSymptomOverrides, getEditCount } from './edit-ui.js';
 
 let _baseScenario = null;
 let _deck = null;
@@ -50,6 +51,10 @@ export function initBalanceStudio() {
   document.getElementById('bs-impact-nruns').addEventListener('input', e => {
     syncRangeDisplay(e.target);
   });
+
+  // edit tab
+  initEditTab(runSimulation);
+  document.addEventListener('edit:changed', _updateEditIndicator);
 }
 
 // ─── SETUP TAB ───────────────────────────────────────────────────────────────
@@ -101,6 +106,18 @@ function switchTab(id) {
   document.querySelectorAll('.bs-tab-pane').forEach(p =>
     p.classList.toggle('hidden', p.dataset.tab !== id)
   );
+  if (id === 'edit') renderEditTab();
+}
+
+function _updateEditIndicator() {
+  const count = getEditCount();
+  const btn = document.querySelector('.bs-tab-btn[data-tab="edit"]');
+  if (!btn) return;
+  if (count > 0) {
+    btn.innerHTML = `편집 <span class="bs-edit-badge">${count}</span>`;
+  } else {
+    btn.textContent = '편집';
+  }
 }
 
 // ─── RUN ─────────────────────────────────────────────────────────────────────
@@ -122,7 +139,8 @@ async function runSimulation() {
 
   const results = await runBalance(
     _baseScenario, _deck, overrides, personaKeys, nRuns,
-    pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; }
+    pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; },
+    getCardOverrides(), getSymptomOverrides()
   );
 
   btn.disabled = false;
@@ -194,7 +212,8 @@ async function runImpact() {
 
   const impactData = await runImpactAnalysis(
     _baseScenario, _deck, overrides, personaKey, nRuns,
-    pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; }
+    pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; },
+    getCardOverrides(), getSymptomOverrides()
   );
 
   btn.disabled = false;

@@ -870,7 +870,8 @@ body {
 
 /* tab panes that manage their own inner layout */
 .bs-tab-pane[data-tab="cardanalysis"],
-.bs-tab-pane[data-tab="impact"] {
+.bs-tab-pane[data-tab="impact"],
+.bs-tab-pane[data-tab="edit"] {
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -959,6 +960,137 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* ── EDIT TAB ── */
+.bs-edit-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  overflow: hidden;
+}
+.bs-edit-col {
+  padding: 14px 20px;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bs-edit-col:last-child { border-right: none; }
+.bs-edit-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.bs-inline-btn {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--note);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.bs-inline-btn:hover { color: var(--text); border-color: var(--frame); }
+.bs-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.bs-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+.bs-editor-row.bs-modified {
+  border-color: var(--frame);
+  background: rgba(180, 140, 80, 0.07);
+}
+.bs-editor-name {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-editor-fields {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.bs-field-wrap {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: default;
+}
+.bs-field-label {
+  font-size: 10px;
+  color: var(--note);
+  white-space: nowrap;
+}
+.bs-field-input {
+  width: 44px;
+  padding: 2px 4px;
+  background: var(--panel-dark);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 12px;
+  border-radius: 3px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.bs-field-input::-webkit-inner-spin-button,
+.bs-field-input::-webkit-outer-spin-button { opacity: 0; width: 0; }
+.bs-field-input:focus { outline: none; border-color: var(--frame); }
+.bs-field-wrap.bs-modified .bs-field-input {
+  border-color: #b47a3c;
+  background: rgba(180, 122, 60, 0.15);
+  color: #e8c080;
+}
+.bs-row-reset {
+  background: none;
+  border: none;
+  color: var(--line);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 2px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.bs-row-reset:hover { color: var(--text); }
+.bs-edit-footer {
+  padding: 10px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 16px;
+}
+.bs-edit-status {
+  font-size: 12px;
+  color: var(--note);
+}
+.bs-edit-badge {
+  display: inline-block;
+  background: #b47a3c;
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: bold;
+  padding: 1px 5px;
+  border-radius: 8px;
+  margin-left: 3px;
+  vertical-align: middle;
+  line-height: 1.4;
 }
 
 /* ── RESULT OVERLAY ── */

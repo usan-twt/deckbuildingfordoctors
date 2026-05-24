@@ -25,6 +25,13 @@ export function loadData(cardsData, symptomsData) {
   BASE_SYMPTOMS = symptomsData;
 }
 
+let _savedCards        = null;
+let _savedBaseSymptoms = null;
+export function swapCards(patched)        { _savedCards = CARDS; CARDS = patched; }
+export function restoreCards()            { if (_savedCards        != null) { CARDS         = _savedCards;        _savedCards        = null; } }
+export function swapBaseSymptoms(patched) { _savedBaseSymptoms = BASE_SYMPTOMS; BASE_SYMPTOMS = patched; }
+export function restoreBaseSymptoms()     { if (_savedBaseSymptoms != null) { BASE_SYMPTOMS = _savedBaseSymptoms; _savedBaseSymptoms = null; } }
+
 export function setSimStrategy(s)  { _simStrategy = s; }
 export function clearSimStrategy() { _simStrategy = null; }
 
