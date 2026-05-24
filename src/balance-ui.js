@@ -1,10 +1,11 @@
 import * as engine from './engine.js';
-import { runBalance, applyOverrides } from './balance.js';
-import { drawScatter, drawWinRate, drawHpCurves } from './charts.js';
+import { runBalance, runImpactAnalysis, applyOverrides } from './balance.js';
+import { drawScatter, drawWinRate, drawHpCurves, drawCardUsage, drawCardHeatmap, drawCardImpact } from './charts.js';
 import { PERSONAS } from './personas.js';
 
 let _baseScenario = null;
 let _deck = null;
+let _lastResults = null;
 
 // ─── OPEN / CLOSE ─────────────────────────────────────────────────────────────
 
@@ -36,6 +37,18 @@ export function initBalanceStudio() {
 
   document.querySelectorAll('.bs-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // card analysis view toggle
+  document.querySelectorAll('input[name="cardview"]').forEach(radio => {
+    radio.addEventListener('change', () => refreshCardAnalysisView());
+  });
+  document.getElementById('bs-heatmap-persona').addEventListener('change', () => refreshCardAnalysisView());
+
+  // impact tab
+  document.getElementById('bs-impact-run').addEventListener('click', runImpact);
+  document.getElementById('bs-impact-nruns').addEventListener('input', e => {
+    syncRangeDisplay(e.target);
   });
 }
 
@@ -115,6 +128,9 @@ async function runSimulation() {
   btn.disabled = false;
   progress.classList.add('hidden');
 
+  _lastResults = results;
+  syncHeatmapPersonaOptions(personaKeys);
+
   const totalGames = personaKeys.length * nRuns;
   document.getElementById('bs-status').textContent =
     `${nRuns}판 × ${personaKeys.length}페르소나 · 총 ${totalGames}게임 완료`;
@@ -122,8 +138,69 @@ async function runSimulation() {
   drawScatter('bs-scatter-canvas', results);
   drawWinRate('bs-winrate-canvas', results);
   drawHpCurves('bs-hpcurve-canvas', results);
+  drawCardUsage('bs-cardusage-canvas', results);
 
   switchTab('scatter');
+}
+
+function syncHeatmapPersonaOptions(personaKeys) {
+  const sel = document.getElementById('bs-heatmap-persona');
+  for (const opt of sel.options) {
+    opt.disabled = !personaKeys.includes(opt.value);
+  }
+  // select first available
+  const first = [...sel.options].find(o => !o.disabled);
+  if (first) sel.value = first.value;
+}
+
+function refreshCardAnalysisView() {
+  const view = document.querySelector('input[name="cardview"]:checked')?.value || 'usage';
+  const usageArea   = document.getElementById('bs-usage-area');
+  const heatmapArea = document.getElementById('bs-heatmap-area');
+  const personaSel  = document.getElementById('bs-heatmap-persona');
+
+  if (view === 'usage') {
+    usageArea.classList.remove('hidden');
+    heatmapArea.classList.add('hidden');
+    personaSel.classList.add('hidden');
+  } else {
+    usageArea.classList.add('hidden');
+    heatmapArea.classList.remove('hidden');
+    personaSel.classList.remove('hidden');
+    if (_lastResults) {
+      const key = personaSel.value;
+      const r   = _lastResults[key];
+      if (r) {
+        const maxTurn = Math.max(...r.games.map(g => g.turns), 1);
+        drawCardHeatmap('bs-heatmap-container', r.cardStats, maxTurn);
+      }
+    }
+  }
+}
+
+async function runImpact() {
+  if (!_lastResults) { alert('먼저 시뮬레이션을 실행하세요.'); return; }
+  const overrides   = getOverrides();
+  const personaKey  = document.getElementById('bs-impact-persona').value;
+  const nRuns       = +document.getElementById('bs-impact-nruns').value;
+
+  const btn      = document.getElementById('bs-impact-run');
+  const fill     = document.getElementById('bs-impact-progress-fill');
+  const progress = document.getElementById('bs-impact-progress');
+
+  btn.disabled = true;
+  progress.classList.remove('hidden');
+  fill.style.width = '0%';
+
+  const impactData = await runImpactAnalysis(
+    _baseScenario, _deck, overrides, personaKey, nRuns,
+    pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; }
+  );
+
+  btn.disabled = false;
+  progress.classList.add('hidden');
+
+  drawCardImpact('bs-impact-canvas', impactData);
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────

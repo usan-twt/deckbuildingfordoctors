@@ -868,6 +868,99 @@ body {
   max-height: 72vh;
 }
 
+/* tab panes that manage their own inner layout */
+.bs-tab-pane[data-tab="cardanalysis"],
+.bs-tab-pane[data-tab="impact"] {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── CARD ANALYSIS TAB ── */
+.bs-cardanalysis-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.bs-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.bs-select {
+  background: var(--panel-dark);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.bs-select.hidden { display: none; }
+#bs-cardanalysis-content {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.bs-heatmap-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 20px;
+}
+.bs-heatmap-wrap.hidden { display: none; }
+.bs-heatmap-container {
+  overflow: auto;
+}
+.bs-heatmap-table {
+  border-collapse: collapse;
+  font-size: 11px;
+  min-width: 100%;
+}
+.bs-heatmap-table th,
+.bs-heatmap-table td {
+  border: 1px solid var(--line);
+  text-align: center;
+  padding: 2px 4px;
+  white-space: nowrap;
+  min-width: 28px;
+  height: 24px;
+}
+.bs-heatmap-table th {
+  background: var(--panel-dark);
+  color: var(--note);
+  font-weight: normal;
+}
+.bs-heatmap-label {
+  text-align: left !important;
+  background: var(--panel-dark);
+  color: var(--text);
+  padding: 2px 8px !important;
+  min-width: 80px;
+}
+
+/* ── IMPACT TAB ── */
+.bs-impact-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.bs-impact-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* ── RESULT OVERLAY ── */
 .result-overlay {
   position: absolute;

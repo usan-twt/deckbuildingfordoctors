@@ -63,6 +63,8 @@
       <button class="bs-tab-btn" data-tab="scatter">산점도</button>
       <button class="bs-tab-btn" data-tab="winrate">승률</button>
       <button class="bs-tab-btn" data-tab="hpcurve">HP 곡선</button>
+      <button class="bs-tab-btn" data-tab="cardanalysis">카드 분석</button>
+      <button class="bs-tab-btn" data-tab="impact">임팩트</button>
     </div>
 
     <!-- 설정 탭 -->
@@ -142,6 +144,55 @@
     <div class="bs-tab-pane hidden" data-tab="hpcurve">
       <div class="bs-chart-area">
         <canvas id="bs-hpcurve-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- 카드 분석 탭 -->
+    <div class="bs-tab-pane hidden" data-tab="cardanalysis">
+      <div class="bs-cardanalysis-bar">
+        <label class="bs-radio-label"><input type="radio" name="cardview" value="usage" checked> 사용 빈도</label>
+        <label class="bs-radio-label"><input type="radio" name="cardview" value="heatmap"> 히트맵</label>
+        <select id="bs-heatmap-persona" class="bs-select hidden">
+          <option value="rush">러쉬</option>
+          <option value="safe">안정</option>
+          <option value="control">컨트롤</option>
+          <option value="efficient">효율</option>
+        </select>
+      </div>
+      <div id="bs-cardanalysis-content">
+        <div class="bs-chart-area" id="bs-usage-area">
+          <canvas id="bs-cardusage-canvas"></canvas>
+        </div>
+        <div class="bs-heatmap-wrap hidden" id="bs-heatmap-area">
+          <div id="bs-heatmap-container" class="bs-heatmap-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 임팩트 탭 -->
+    <div class="bs-tab-pane hidden" data-tab="impact">
+      <div class="bs-impact-bar">
+        <div class="bs-impact-controls">
+          <label class="bs-range-label">페르소나</label>
+          <select id="bs-impact-persona" class="bs-select">
+            <option value="rush">러쉬</option>
+            <option value="safe">안정</option>
+            <option value="control">컨트롤</option>
+            <option value="efficient">효율</option>
+          </select>
+          <label class="bs-range-label">판수</label>
+          <div class="bs-range-wrap" style="flex:0 0 160px">
+            <input type="range" id="bs-impact-nruns" min="20" max="200" step="10" value="50">
+            <span class="bs-range-val">50</span>
+          </div>
+        </div>
+        <div id="bs-impact-progress" class="bs-progress hidden">
+          <div id="bs-impact-progress-fill" class="bs-progress-fill"></div>
+        </div>
+        <button id="bs-impact-run" class="bs-btn primary">▶ 임팩트 분석 실행</button>
+      </div>
+      <div class="bs-chart-area">
+        <canvas id="bs-impact-canvas"></canvas>
       </div>
     </div>
 

@@ -220,6 +220,7 @@ async function waitDiscardPick() {
 async function playCard(id) {
   const c = CARDS[id]; const e = c.effect;
   log(`> ${id}`);
+  _simStrategy?.onCardPlayed?.(G.turn, id);
 
   if (c.type === 'treatment') {
     if (e.suppress_symptom) {
