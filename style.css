@@ -869,9 +869,9 @@ body {
 }
 
 /* tab panes that manage their own inner layout */
-.bs-tab-pane[data-tab="cardanalysis"],
-.bs-tab-pane[data-tab="impact"],
-.bs-tab-pane[data-tab="edit"] {
+.bs-tab-pane[data-tab="cardanalysis"]:not(.hidden),
+.bs-tab-pane[data-tab="impact"]:not(.hidden),
+.bs-tab-pane[data-tab="edit"]:not(.hidden) {
   padding: 0;
   display: flex;
   flex-direction: column;
