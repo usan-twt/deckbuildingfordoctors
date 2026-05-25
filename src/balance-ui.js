@@ -20,6 +20,8 @@ export function openBalanceStudio(scenario, deck) {
 
 export function closeBalanceStudio() {
   document.getElementById('balance-studio').classList.add('hidden');
+  _lastResults = null;
+  _updateEditIndicator();
 }
 
 // ─── INIT (called once on page load) ─────────────────────────────────────────
@@ -122,29 +124,46 @@ function _updateEditIndicator() {
 
 // ─── RUN ─────────────────────────────────────────────────────────────────────
 
+let _simRunning = false;
+
+function _setAllRunBtns(disabled) {
+  document.getElementById('bs-run').disabled        = disabled;
+  document.getElementById('bs-edit-run').disabled   = disabled;
+  document.getElementById('bs-impact-run').disabled = disabled;
+}
+
 async function runSimulation() {
+  if (_simRunning) return;
   const overrides    = getOverrides();
   const personaKeys  = getPersonaKeys();
   const nRuns        = getNRuns();
 
   if (!personaKeys.length) { alert('페르소나를 하나 이상 선택하세요.'); return; }
 
-  const btn      = document.getElementById('bs-run');
   const fill     = document.getElementById('bs-progress-fill');
   const progress = document.getElementById('bs-progress');
 
-  btn.disabled = true;
+  _simRunning = true;
+  _setAllRunBtns(true);
   progress.classList.remove('hidden');
   fill.style.width = '0%';
 
-  const results = await runBalance(
-    _baseScenario, _deck, overrides, personaKeys, nRuns,
-    pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; },
-    getCardOverrides(), getSymptomOverrides()
-  );
-
-  btn.disabled = false;
-  progress.classList.add('hidden');
+  let results;
+  try {
+    results = await runBalance(
+      _baseScenario, _deck, overrides, personaKeys, nRuns,
+      pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; },
+      getCardOverrides(), getSymptomOverrides()
+    );
+  } catch (err) {
+    console.error('runBalance error:', err);
+    alert(`시뮬레이션 오류: ${err.message}`);
+    return;
+  } finally {
+    _simRunning = false;
+    _setAllRunBtns(false);
+    progress.classList.add('hidden');
+  }
 
   _lastResults = results;
   syncHeatmapPersonaOptions(personaKeys);
@@ -153,12 +172,12 @@ async function runSimulation() {
   document.getElementById('bs-status').textContent =
     `${nRuns}판 × ${personaKeys.length}페르소나 · 총 ${totalGames}게임 완료`;
 
+  // switchTab first so canvases are visible when Chart.js measures dimensions
+  switchTab('scatter');
   drawScatter('bs-scatter-canvas', results);
   drawWinRate('bs-winrate-canvas', results);
   drawHpCurves('bs-hpcurve-canvas', results);
   drawCardUsage('bs-cardusage-canvas', results);
-
-  switchTab('scatter');
 }
 
 function syncHeatmapPersonaOptions(personaKeys) {
@@ -197,27 +216,36 @@ function refreshCardAnalysisView() {
 }
 
 async function runImpact() {
+  if (_simRunning) return;
   if (!_lastResults) { alert('먼저 시뮬레이션을 실행하세요.'); return; }
-  const overrides   = getOverrides();
-  const personaKey  = document.getElementById('bs-impact-persona').value;
-  const nRuns       = +document.getElementById('bs-impact-nruns').value;
+  const overrides  = getOverrides();
+  const personaKey = document.getElementById('bs-impact-persona').value;
+  const nRuns      = +document.getElementById('bs-impact-nruns').value;
 
-  const btn      = document.getElementById('bs-impact-run');
   const fill     = document.getElementById('bs-impact-progress-fill');
   const progress = document.getElementById('bs-impact-progress');
 
-  btn.disabled = true;
+  _simRunning = true;
+  _setAllRunBtns(true);
   progress.classList.remove('hidden');
   fill.style.width = '0%';
 
-  const impactData = await runImpactAnalysis(
-    _baseScenario, _deck, overrides, personaKey, nRuns,
-    pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; },
-    getCardOverrides(), getSymptomOverrides()
-  );
-
-  btn.disabled = false;
-  progress.classList.add('hidden');
+  let impactData;
+  try {
+    impactData = await runImpactAnalysis(
+      _baseScenario, _deck, overrides, personaKey, nRuns,
+      pct => { fill.style.width = `${(pct * 100).toFixed(0)}%`; },
+      getCardOverrides(), getSymptomOverrides()
+    );
+  } catch (err) {
+    console.error('runImpactAnalysis error:', err);
+    alert(`임팩트 분석 오류: ${err.message}`);
+    return;
+  } finally {
+    _simRunning = false;
+    _setAllRunBtns(false);
+    progress.classList.add('hidden');
+  }
 
   drawCardImpact('bs-impact-canvas', impactData);
 }

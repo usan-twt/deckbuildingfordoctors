@@ -202,7 +202,7 @@ async function doSuppress(effect) {
 }
 
 async function waitSymptomPick() {
-  if (_simStrategy) return _simStrategy.pickSymptom(active(), G);
+  if (_simStrategy) return _simStrategy.pickSymptom(active(), G, SYMPTOMS);
   _pickingSymptom = true;
   emit('state:changed');
   return new Promise(r => { _symptomPickResolver = r; });
