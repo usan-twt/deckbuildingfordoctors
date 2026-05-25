@@ -61,48 +61,56 @@ export function drawWinRate(canvasId, results) {
 export function drawHpCurves(canvasId, results) {
   destroy(canvasId);
   const ctx = document.getElementById(canvasId).getContext('2d');
-  const datasets = [];
 
-  for (const r of Object.values(results)) {
-    const sample = r.games.slice(0, 60);
-    for (const game of sample) {
-      datasets.push({
-        label: r.label,
-        data: game.hpTrace.map(s => ({ x: s.turn, y: s.patientHp })),
-        borderColor: r.color + '50',
-        borderWidth: 1,
-        pointRadius: 0,
-        showLine: true,
-        fill: false,
-        tension: 0.1,
-      });
-    }
+  function pct(arr, p) {
+    if (!arr.length) return null;
+    const s = [...arr].sort((a, b) => a - b);
+    const i = (p / 100) * (s.length - 1);
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return s[lo] + (s[hi] - s[lo]) * (i - lo);
   }
 
-  // legend entries — one per persona (not per line)
-  const legendDatasets = Object.values(results).map(r => ({
-    label: r.label,
-    borderColor: r.color,
-    borderWidth: 2,
-    data: [],
-  }));
+  const datasets = [];
+  for (const r of Object.values(results)) {
+    const byTurn = {};
+    for (const game of r.games) {
+      for (const snap of game.hpTrace) {
+        if (!byTurn[snap.turn]) byTurn[snap.turn] = [];
+        byTurn[snap.turn].push(snap.patientHp);
+      }
+    }
+    const turns = Object.keys(byTurn).map(Number).sort((a, b) => a - b);
+    const p25  = turns.map(t => ({ x: t, y: pct(byTurn[t], 25) }));
+    const med  = turns.map(t => ({ x: t, y: pct(byTurn[t], 50) }));
+    const p75  = turns.map(t => ({ x: t, y: pct(byTurn[t], 75) }));
+
+    // p25 lower bound (fill target)
+    datasets.push({ label: `_${r.label}_lo`, data: p25, borderColor: 'transparent',
+      backgroundColor: 'transparent', pointRadius: 0, fill: false, showLine: true });
+    // p75 upper bound fills down to p25
+    datasets.push({ label: `_${r.label}_hi`, data: p75, borderColor: 'transparent',
+      backgroundColor: r.color + '28', pointRadius: 0, fill: '-1', showLine: true });
+    // median line
+    datasets.push({ label: r.label, data: med, borderColor: r.color,
+      backgroundColor: 'transparent', borderWidth: 2.5,
+      pointRadius: 0, fill: false, showLine: true });
+  }
 
   _instances[canvasId] = new Chart(ctx, {
     type: 'line',
-    data: { datasets: [...datasets, ...legendDatasets] },
+    data: { datasets },
     options: {
       animation: false,
       parsing: false,
       scales: {
-        x: { type: 'linear', title: { display: true, text: '턴' }, min: 0 },
-        y: { title: { display: true, text: '환자 HP' }, min: 0 },
+        x: { type: 'linear', title: { display: true, text: '턴' }, min: 1, ticks: { stepSize: 1 } },
+        y: { title: { display: true, text: '환자 HP (중앙값 ± IQR)' }, min: 0 },
       },
       plugins: {
-        legend: {
-          position: 'top',
-          labels: { filter: item => item.datasetIndex >= datasets.length },
-        },
-        tooltip: { enabled: false },
+        legend: { position: 'top',
+          labels: { filter: item => !item.text.startsWith('_') } },
+        tooltip: { mode: 'index', intersect: false,
+          filter: item => !item.dataset.label.startsWith('_') },
       },
     },
   });
@@ -187,62 +195,56 @@ export function drawCardHeatmap(containerId, cardStats, maxTurn) {
   container.appendChild(table);
 }
 
-export function drawCardImpact(canvasId, impactData) {
-  destroy(canvasId);
-  const ctx = document.getElementById(canvasId).getContext('2d');
+export function drawCardImpact(containerId, impactData) {
+  destroy(containerId + '-win');
+  destroy(containerId + '-hp');
+
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
   const { cards, baseWinRate, baseAvgHp } = impactData;
+  const sorted   = [...cards].sort((a, b) => Math.abs(b.deltaWinRate) - Math.abs(a.deltaWinRate));
+  const labels   = sorted.map(c => c.id);
+  const winDelta = sorted.map(c => +(c.deltaWinRate * 100).toFixed(1));
+  const hpDelta  = sorted.map(c => +c.deltaAvgHp.toFixed(2));
 
-  const labels   = cards.map(c => c.id);
-  const winDelta = cards.map(c => +(c.deltaWinRate * 100).toFixed(1));
-  const hpDelta  = cards.map(c => +c.deltaAvgHp.toFixed(2));
+  container.innerHTML = `
+    <div class="bs-impact-kpi">
+      기준 — 승률 <strong>${(baseWinRate * 100).toFixed(1)}%</strong> &nbsp;·&nbsp; 평균 환자 HP <strong>${baseAvgHp.toFixed(1)}</strong>
+      &nbsp;<span class="bs-impact-kpi-note">(카드 제거 시 각 지표의 변화량)</span>
+    </div>
+    <div class="bs-impact-charts">
+      <div class="bs-impact-half"><canvas id="${containerId}-win"></canvas></div>
+      <div class="bs-impact-half"><canvas id="${containerId}-hp"></canvas></div>
+    </div>`;
 
-  _instances[canvasId] = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: '승률 기여 (%)',
-          data: winDelta,
-          backgroundColor: winDelta.map(v => v >= 0 ? '#27ae60cc' : '#c0392bcc'),
-          yAxisID: 'yWin',
-          order: 2,
+  function makeChart(id, data, yLabel, title) {
+    const ctx = document.getElementById(id).getContext('2d');
+    _instances[id] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: data.map(v => v >= 0 ? '#27ae60cc' : '#c0392bcc'),
+        }],
+      },
+      options: {
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: title, font: { size: 12 }, padding: { bottom: 8 } },
+          tooltip: { callbacks: { label: ctx => `${ctx.parsed.y > 0 ? '+' : ''}${ctx.parsed.y} ${yLabel}` } },
         },
-        {
-          label: '환자HP 기여',
-          data: hpDelta,
-          type: 'line',
-          borderColor: '#2980b9',
-          backgroundColor: 'transparent',
-          pointRadius: 5,
-          tension: 0.1,
-          yAxisID: 'yHp',
-          order: 1,
-        },
-      ],
-    },
-    options: {
-      animation: false,
-      scales: {
-        x: { ticks: { font: { size: 11 } } },
-        yWin: {
-          position: 'left',
-          title: { display: true, text: '승률 기여 (%)' },
-        },
-        yHp: {
-          position: 'right',
-          title: { display: true, text: 'HP 기여' },
-          grid: { drawOnChartArea: false },
+        scales: {
+          x: { ticks: { font: { size: 11 } } },
+          y: { title: { display: true, text: yLabel },
+               ticks: { callback: v => (v > 0 ? '+' : '') + v } },
         },
       },
-      plugins: {
-        legend: { position: 'top' },
-        tooltip: {
-          callbacks: {
-            afterTitle: () => `기준: 승률 ${(baseWinRate * 100).toFixed(1)}% / HP ${baseAvgHp.toFixed(1)}`,
-          },
-        },
-      },
-    },
-  });
+    });
+  }
+
+  makeChart(containerId + '-win', winDelta, '%',   '카드 제거 시 승률 변화 (%)');
+  makeChart(containerId + '-hp',  hpDelta,  'HP',  '카드 제거 시 평균 환자 HP 변화');
 }
