@@ -22,6 +22,7 @@ export function closeBalanceStudio() {
   document.getElementById('balance-studio').classList.add('hidden');
   _lastResults = null;
   _updateEditIndicator();
+  _updateKpiStrip(null);
 }
 
 // ─── INIT (called once on page load) ─────────────────────────────────────────
@@ -46,7 +47,6 @@ export function initBalanceStudio() {
   document.querySelectorAll('input[name="cardview"]').forEach(radio => {
     radio.addEventListener('change', () => refreshCardAnalysisView());
   });
-  document.getElementById('bs-heatmap-persona').addEventListener('change', () => refreshCardAnalysisView());
 
   // impact tab
   document.getElementById('bs-impact-run').addEventListener('click', runImpact);
@@ -122,6 +122,20 @@ function _updateEditIndicator() {
   }
 }
 
+function _updateKpiStrip(results) {
+  const strip = document.getElementById('bs-kpi-strip');
+  if (!strip) return;
+  if (!results) { strip.classList.add('hidden'); return; }
+  strip.innerHTML = Object.values(results).map(r =>
+    `<span class="bs-kpi-item">` +
+    `<span class="bs-kpi-dot" style="background:${r.color}"></span>` +
+    `${r.label} — 승률 <strong>${(r.winRate * 100).toFixed(0)}%</strong>` +
+    ` · ${r.avgTurns.toFixed(1)}턴 · HP ${r.avgHp.toFixed(1)}` +
+    `</span>`
+  ).join('');
+  strip.classList.remove('hidden');
+}
+
 // ─── RUN ─────────────────────────────────────────────────────────────────────
 
 let _simRunning = false;
@@ -166,7 +180,7 @@ async function runSimulation() {
   }
 
   _lastResults = results;
-  syncHeatmapPersonaOptions(personaKeys);
+  _updateKpiStrip(results);
 
   const totalGames = personaKeys.length * nRuns;
   document.getElementById('bs-status').textContent =
@@ -180,37 +194,19 @@ async function runSimulation() {
   drawCardUsage('bs-cardusage-canvas', results);
 }
 
-function syncHeatmapPersonaOptions(personaKeys) {
-  const sel = document.getElementById('bs-heatmap-persona');
-  for (const opt of sel.options) {
-    opt.disabled = !personaKeys.includes(opt.value);
-  }
-  // select first available
-  const first = [...sel.options].find(o => !o.disabled);
-  if (first) sel.value = first.value;
-}
-
 function refreshCardAnalysisView() {
   const view = document.querySelector('input[name="cardview"]:checked')?.value || 'usage';
   const usageArea   = document.getElementById('bs-usage-area');
   const heatmapArea = document.getElementById('bs-heatmap-area');
-  const personaSel  = document.getElementById('bs-heatmap-persona');
 
   if (view === 'usage') {
     usageArea.classList.remove('hidden');
     heatmapArea.classList.add('hidden');
-    personaSel.classList.add('hidden');
   } else {
     usageArea.classList.add('hidden');
     heatmapArea.classList.remove('hidden');
-    personaSel.classList.remove('hidden');
     if (_lastResults) {
-      const key = personaSel.value;
-      const r   = _lastResults[key];
-      if (r) {
-        const maxTurn = Math.max(...r.games.map(g => g.turns), 1);
-        drawCardHeatmap('bs-heatmap-container', r.cardStats, maxTurn);
-      }
+      drawCardHeatmap('bs-heatmap-container', _lastResults);
     }
   }
 }

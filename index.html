@@ -68,6 +68,8 @@
       <button class="bs-tab-btn" data-tab="edit">편집</button>
     </div>
 
+    <div id="bs-kpi-strip" class="bs-kpi-strip hidden"></div>
+
     <!-- 설정 탭 -->
     <div class="bs-tab-pane" data-tab="setup">
       <div class="bs-setup-body">
@@ -151,12 +153,6 @@
       <div class="bs-cardanalysis-bar">
         <label class="bs-radio-label"><input type="radio" name="cardview" value="usage" checked> 사용 빈도</label>
         <label class="bs-radio-label"><input type="radio" name="cardview" value="heatmap"> 히트맵</label>
-        <select id="bs-heatmap-persona" class="bs-select hidden">
-          <option value="rush">러쉬</option>
-          <option value="safe">안정</option>
-          <option value="control">컨트롤</option>
-          <option value="efficient">효율</option>
-        </select>
       </div>
       <div id="bs-cardanalysis-content">
         <div class="bs-chart-area" id="bs-usage-area">

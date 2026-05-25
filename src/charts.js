@@ -213,49 +213,76 @@ export function drawCardUsage(canvasId, results) {
   });
 }
 
-export function drawCardHeatmap(containerId, cardStats, maxTurn) {
+export function drawCardHeatmap(containerId, results) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const cardIds = Object.keys(cardStats).sort();
-  const cols = Math.min(maxTurn || 15, 15);
-  const totalPlays = Object.values(cardStats).reduce((s, v) => s + v.totalPlays, 0);
-  const globalMax = totalPlays > 0
-    ? Math.max(...Object.values(cardStats).flatMap(v => Object.values(v.byTurn)))
-    : 1;
-
-  const table = document.createElement('table');
-  table.className = 'bs-heatmap-table';
-
-  // header row
-  const thead = table.createTHead();
-  const hrow = thead.insertRow();
-  hrow.insertCell().textContent = '카드 \\ 턴';
-  for (let t = 1; t <= cols; t++) {
-    const th = document.createElement('th');
-    th.textContent = t;
-    hrow.appendChild(th);
+  // Collect all card ids and global max turn
+  const allCardIds = new Set();
+  let globalMaxTurn = 1;
+  for (const r of Object.values(results)) {
+    for (const id of Object.keys(r.cardStats)) allCardIds.add(id);
+    globalMaxTurn = Math.max(globalMaxTurn, ...r.games.map(g => g.turns));
   }
+  const cardIds = [...allCardIds].sort();
+  const cols = Math.min(globalMaxTurn, 15);
 
-  // data rows
-  const tbody = table.createTBody();
-  for (const id of cardIds) {
-    const row = tbody.insertRow();
-    const nameCell = row.insertCell();
-    nameCell.textContent = id;
-    nameCell.className = 'bs-heatmap-label';
+  function makeTable(cardStats, color) {
+    const table = document.createElement('table');
+    table.className = 'bs-heatmap-table';
+
+    const hrow = table.createTHead().insertRow();
+    hrow.insertCell().textContent = '';
     for (let t = 1; t <= cols; t++) {
-      const cell = row.insertCell();
-      const count = cardStats[id]?.byTurn[t] || 0;
-      const intensity = globalMax > 0 ? count / globalMax : 0;
-      cell.style.background = `rgba(180, 120, 60, ${intensity.toFixed(3)})`;
-      cell.title = `${id} · 턴${t}: ${count}회`;
-      cell.textContent = count > 0 ? count : '';
+      const th = document.createElement('th');
+      th.textContent = t;
+      hrow.appendChild(th);
     }
+
+    const tbody = table.createTBody();
+    for (const id of cardIds) {
+      // Row-wise max: normalise within each card so timing pattern is visible
+      const rowMax = Math.max(1, ...Array.from({ length: cols }, (_, i) => cardStats[id]?.byTurn[i + 1] || 0));
+      const row = tbody.insertRow();
+      const nameCell = row.insertCell();
+      nameCell.textContent = id;
+      nameCell.className = 'bs-heatmap-label';
+      for (let t = 1; t <= cols; t++) {
+        const count = cardStats[id]?.byTurn[t] || 0;
+        const cell = row.insertCell();
+        const intensity = count / rowMax;
+        cell.style.background = intensity > 0
+          ? `rgba(${hexToRgb(color)}, ${(intensity * 0.85 + 0.05).toFixed(3)})`
+          : '';
+        cell.title = `${id} · 턴${t}: ${count}회`;
+        cell.textContent = count > 0 ? count : '';
+      }
+    }
+    return table;
   }
 
+  const grid = document.createElement('div');
+  grid.className = 'bs-heatmap-grid';
+  for (const r of Object.values(results)) {
+    const mini = document.createElement('div');
+    mini.className = 'bs-heatmap-mini';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'bs-heatmap-mini-title';
+    titleEl.textContent = r.label;
+    titleEl.style.borderBottom = `2px solid ${r.color}`;
+    mini.appendChild(titleEl);
+    mini.appendChild(makeTable(r.cardStats, r.color));
+    grid.appendChild(mini);
+  }
   container.innerHTML = '';
-  container.appendChild(table);
+  container.appendChild(grid);
+}
+
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3
+    ? h.split('').map(c => c + c).join('') : h, 16);
+  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
 }
 
 export function drawCardImpact(containerId, impactData) {
