@@ -869,12 +869,32 @@ body {
 }
 
 /* tab panes that manage their own inner layout */
+.bs-tab-pane[data-tab="scatter"]:not(.hidden),
 .bs-tab-pane[data-tab="cardanalysis"]:not(.hidden),
 .bs-tab-pane[data-tab="impact"]:not(.hidden),
 .bs-tab-pane[data-tab="edit"]:not(.hidden) {
   padding: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* ── SCATTER SMALL MULTIPLES ── */
+.bs-scatter-outer {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px 20px;
+  min-height: 0;
+  overflow: auto;
+}
+.bs-scatter-panel {
+  position: relative;
+  min-height: 260px;
+}
+.bs-scatter-panel canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* ── CARD ANALYSIS TAB ── */

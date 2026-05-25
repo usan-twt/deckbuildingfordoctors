@@ -6,30 +6,66 @@ function destroy(id) {
   if (_instances[id]) { _instances[id].destroy(); delete _instances[id]; }
 }
 
-export function drawScatter(canvasId, results) {
-  destroy(canvasId);
-  const ctx = document.getElementById(canvasId).getContext('2d');
-  const datasets = Object.values(results).map(r => ({
-    label: r.label,
-    data: r.games.filter(g => g.outcome === 'win').map(g => ({ x: g.turns, y: g.patientHp })),
-    backgroundColor: r.color + 'aa',
-    pointRadius: 5,
-    pointHoverRadius: 7,
-  }));
+export function drawScatter(containerId, results) {
+  // Destroy previous panels
+  for (const key of Object.keys(_instances).filter(k => k.startsWith(containerId + '-'))) {
+    _instances[key].destroy(); delete _instances[key];
+  }
 
-  _instances[canvasId] = new Chart(ctx, {
-    type: 'scatter',
-    data: { datasets },
-    options: {
-      animation: false,
-      scales: {
-        x: { title: { display: true, text: '소모 턴' }, min: 0, ticks: { stepSize: 1 } },
-        y: { title: { display: true, text: '남은 환자 HP' }, min: 0 },
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const allTurns = Object.values(results).flatMap(r => r.games.map(g => g.turns));
+  const xMax = Math.max(...allTurns, 1) + 1;
+
+  container.innerHTML = Object.keys(results)
+    .map(key => `<div class="bs-scatter-panel"><canvas id="${containerId}-${key}"></canvas></div>`)
+    .join('');
+
+  for (const [key, r] of Object.entries(results)) {
+    const wins     = r.games.filter(g => g.outcome === 'win');
+    const loses    = r.games.filter(g => g.outcome === 'lose');
+    const timeouts = r.games.filter(g => g.outcome === 'timeout');
+    const nGames   = r.games.length;
+
+    const ctx = document.getElementById(`${containerId}-${key}`).getContext('2d');
+    _instances[`${containerId}-${key}`] = new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          { label: `승리 (${wins.length})`,
+            data: wins.map(g => ({ x: g.turns, y: g.patientHp })),
+            backgroundColor: '#27ae6088', pointRadius: 4, pointHoverRadius: 6 },
+          { label: `패배 (${loses.length})`,
+            data: loses.map(g => ({ x: g.turns, y: g.patientHp })),
+            backgroundColor: '#c0392b99', pointRadius: 5, pointHoverRadius: 7,
+            pointStyle: 'crossRot' },
+          { label: `시간초과 (${timeouts.length})`,
+            data: timeouts.map(g => ({ x: g.turns, y: g.patientHp })),
+            backgroundColor: '#7f8c8d88', pointRadius: 4, pointHoverRadius: 6,
+            pointStyle: 'triangle' },
+        ],
       },
-      plugins: { legend: { position: 'top' },
-                 tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.x}턴, HP ${ctx.parsed.y}` } } },
-    },
-  });
+      options: {
+        animation: false,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+          title: {
+            display: true,
+            text: `${r.label}  ·  승률 ${(r.winRate * 100).toFixed(0)}%  ·  평균 ${r.avgTurns.toFixed(1)}턴`,
+            font: { size: 12 }, padding: { bottom: 4 },
+          },
+          tooltip: { callbacks: {
+            label: c => `${c.parsed.x}턴, HP ${c.parsed.y}`,
+          }},
+        },
+        scales: {
+          x: { title: { display: true, text: '소모 턴' }, min: 0, max: xMax, ticks: { stepSize: 2 } },
+          y: { title: { display: true, text: '환자 HP' }, min: 0 },
+        },
+      },
+    });
+  }
 }
 
 export function drawWinRate(canvasId, results) {
@@ -122,18 +158,37 @@ export function drawCardUsage(canvasId, results) {
   destroy(canvasId);
   const ctx = document.getElementById(canvasId).getContext('2d');
 
-  // collect all card ids across all personas
   const allCards = new Set();
   for (const r of Object.values(results))
     for (const id of Object.keys(r.cardStats)) allCards.add(id);
-  const labels = [...allCards].sort();
-  const nGames = Object.values(results)[0]?.games.length || 1;
 
-  const datasets = Object.values(results).map(r => ({
-    label: r.label,
-    data: labels.map(id => +(((r.cardStats[id]?.totalPlays || 0) / nGames).toFixed(2))),
-    backgroundColor: r.color + 'cc',
-  }));
+  // Sort by total plays descending (averaged across personas)
+  const allResults = Object.values(results);
+  const labels = [...allCards].sort((a, b) => {
+    const sa = allResults.reduce((s, r) => s + (r.cardStats[a]?.totalPlays || 0), 0);
+    const sb = allResults.reduce((s, r) => s + (r.cardStats[b]?.totalPlays || 0), 0);
+    return sb - sa;
+  });
+
+  // Compute appearance rate: % of games where card was played ≥1 time
+  const appearance = {};
+  for (const r of allResults) {
+    const n = r.games.length || 1;
+    appearance[r.label] = {};
+    for (const id of labels) {
+      const count = r.games.filter(g => g.cardLog.some(c => c.id === id)).length;
+      appearance[r.label][id] = count / n;
+    }
+  }
+
+  const datasets = allResults.map(r => {
+    const n = r.games.length || 1;
+    return {
+      label: r.label,
+      data: labels.map(id => +(((r.cardStats[id]?.totalPlays || 0) / n).toFixed(2))),
+      backgroundColor: r.color + 'cc',
+    };
+  });
 
   _instances[canvasId] = new Chart(ctx, {
     type: 'bar',
@@ -145,7 +200,15 @@ export function drawCardUsage(canvasId, results) {
         x: { title: { display: true, text: '평균 사용 횟수/판' }, min: 0 },
         y: { ticks: { font: { size: 11 } } },
       },
-      plugins: { legend: { position: 'top' } },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: { callbacks: {
+          afterLabel: ctx => {
+            const rate = appearance[ctx.dataset.label]?.[labels[ctx.dataIndex]] ?? 0;
+            return `출현: ${(rate * 100).toFixed(0)}% 게임`;
+          },
+        }},
+      },
     },
   });
 }
