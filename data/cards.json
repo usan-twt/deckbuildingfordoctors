@@ -12,5 +12,23 @@
   {"id": "소작술",       "cost": 1, "type": "treatment", "discipline": "외과", "desc": "출혈 3턴 억제, 통증 부여\n(출혈 없으면 통증만)", "effect": {"suppress_symptom": "출혈", "suppress_turns": 3, "add_symptom": "통증"}},
   {"id": "집중",         "cost": 1, "type": "support",   "discipline": "외과", "desc": "카드 3장 드로우, 1장 버림",      "effect": {"draw": 3, "discard_from_hand": 1}},
   {"id": "지혈압박",     "cost": 0, "type": "stabilize", "discipline": "외과", "desc": "방어 +2\n(출혈 활성: 방어 +4)",  "effect": {"defense": 2, "defense_if_active": {"출혈": 2}}},
-  {"id": "상처확인",     "cost": 0, "type": "stabilize", "discipline": "외과", "desc": "방어 +3",                        "effect": {"defense": 3}}
+  {"id": "상처확인",     "cost": 0, "type": "stabilize", "discipline": "외과", "desc": "방어 +3",                        "effect": {"defense": 3}},
+
+  {"id": "귀띔",         "cost": 0, "type": "support",   "discipline": "공통", "pack": "계",       "desc": "증상 1개 진단, 라포 +1",          "effect": {"reveal": 1, "rapport_gain": 1}},
+  {"id": "수소문",       "cost": 1, "type": "support",   "discipline": "공통", "pack": "계",       "desc": "덱에서 5장 보고 1장 회수",        "effect": {"deck_search": {"look": 5, "take": 1}}},
+  {"id": "연줄",         "cost": 1, "type": "support",   "discipline": "공통", "pack": "계",       "desc": "손패 1장 코스트 -1\n(치료면 효과 +2)", "effect": {"hand_cost_reduce": {"amount": 1, "treatment_bonus": 2}}},
+  {"id": "언니들",       "cost": 1, "type": "stabilize", "discipline": "공통", "pack": "계",       "desc": "방어 +4\n(라포 2↑: +2 & 증상 1턴 억제)", "effect": {"defense": 4, "rapport_bonus": {"threshold": 2, "defense": 2, "suppress_any": 1}}},
+  {"id": "부조",         "cost": 1, "type": "support",   "discipline": "공통", "pack": "계",       "desc": "라포 3 소모: 2장 드로우 + 코스트 -1\n(부족 시 1장)", "effect": {"rapport_spend": {"cost": 3, "draw": 2, "cost_reduce_next": 1, "partial_draw": 1}}},
+
+  {"id": "떼쓰기",       "cost": 0, "type": "support",   "discipline": "공통", "pack": "전쟁놀이", "desc": "2장 드로우, 1장 버림",            "effect": {"draw": 2, "discard_from_hand": 1}},
+  {"id": "모르는노래",   "cost": 0, "type": "treatment", "discipline": "공통", "pack": "전쟁놀이", "desc": "활성 증상 1개 1턴 억제",          "effect": {"suppress": "any", "turns": 1}},
+  {"id": "따라하기",     "cost": 1, "type": "support",   "discipline": "공통", "pack": "전쟁놀이", "desc": "직전 내과/공통 치료 반복 (효과 -2)", "effect": {"repeat_last_treatment": {"penalty": 2, "disciplines": ["내과", "공통"]}}},
+  {"id": "심부름",       "cost": 1, "type": "stabilize", "discipline": "공통", "pack": "전쟁놀이", "desc": "방어 +3, 1장 드로우",             "effect": {"defense": 3, "draw": 1}},
+  {"id": "떠들썩",       "cost": 1, "type": "stabilize", "discipline": "공통", "pack": "전쟁놀이", "desc": "환자 +3 HP, 통증 1턴 억제",       "effect": {"heal": 3, "suppress_symptom": "통증", "suppress_turns": 1}},
+
+  {"id": "숨크게",       "cost": 0, "type": "support",   "discipline": "공통", "pack": "인술",     "desc": "「숨, 크게」 증상 1개 진단, 다음 치료 +1", "effect": {"reveal": 1, "buff_next_treatment": 1}},
+  {"id": "약첩",         "cost": 1, "type": "treatment", "discipline": "내과", "pack": "인술",     "desc": "본체 -4 HP\n(전투 내 약첩 1회당 추가 -2)", "effect": {"damage": 4, "yakchop": {"bonus_per_use": 2}}},
+  {"id": "환기하세요",   "cost": 1, "type": "stabilize", "discipline": "내과", "pack": "인술",     "desc": "방어 +3\n3턴간 억제 증상 재활성화 차단", "effect": {"defense": 3, "block_reactivation": 3}},
+  {"id": "밤샘",         "cost": 1, "type": "stabilize", "discipline": "내과", "pack": "인술",     "desc": "「밤을 새웁니다」 환자 +4 HP\n(절반↓: +4), 다음 턴 드로우 -1", "effect": {"heal": 4, "heal_if_low": {"threshold": 0.5, "amount": 4}, "next_turn_draw": -1}},
+  {"id": "외곽의인술",   "cost": 1, "type": "stabilize", "discipline": "내과", "pack": "인술",     "desc": "환자 +8 HP\n30% 확률 무작위 상태이상", "effect": {"heal": 8, "random_status": {"chance": 0.3}}}
 ]

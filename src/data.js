@@ -1,7 +1,7 @@
 export function buildCards(arr) {
   const out = {};
   for (const c of arr)
-    out[c.id] = { cost: c.cost, type: c.type, discipline: c.discipline || '공통', desc: c.desc || '', effect: c.effect };
+    out[c.id] = { cost: c.cost, type: c.type, discipline: c.discipline || '공통', pack: c.pack || null, desc: c.desc || '', effect: c.effect };
   return out;
 }
 

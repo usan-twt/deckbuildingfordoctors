@@ -51,11 +51,26 @@ function scoreCard(id, G, CARDS, SYMPTOMS, w) {
   }
 
   if (c.type === 'support') {
-    if (e.draw)                tempo += e.draw * 1.5;
     if (e.cost_reduce_next)    tempo += e.cost_reduce_next * 2;
     if (e.buff_next_treatment) tempo += e.buff_next_treatment * 1.5;
     if (e.buff_treatment)      tempo += e.buff_treatment * 1.5;
   }
+
+  // companion-pack effects (type-agnostic)
+  if (e.yakchop) dmg += (G.yakchopUses || 0) * (e.yakchop.bonus_per_use || 0);
+  if (e.repeat_last_treatment) {
+    const lt = G.lastTreatment, rp = e.repeat_last_treatment;
+    if (lt && rp.disciplines.includes(lt.discipline)) dmg += Math.max(0, lt.damage - (rp.penalty || 0));
+  }
+  if (e.draw)             tempo += e.draw * 1.5;
+  if (e.deck_search)      tempo += (e.deck_search.take || 1) * 1.5;
+  if (e.hand_cost_reduce) tempo += 2;
+  if (e.reveal)           tempo += 0.5 * e.reveal;
+  if (e.rapport_gain)     tempo += 0.5 * e.rapport_gain;
+  if (e.rapport_spend && G.rapport >= e.rapport_spend.cost) tempo += (e.rapport_spend.draw || 0) * 1.5;
+  if (e.rapport_bonus && G.rapport >= e.rapport_bonus.threshold) def += e.rapport_bonus.defense || 0;
+  if (e.heal_if_low && G.patientHp / G.maxHp < e.heal_if_low.threshold) heal += e.heal_if_low.amount;
+  if (e.next_turn_draw)   tempo += e.next_turn_draw;
 
   // context multipliers
   let wDmg = w.dmg, wDef = w.def, wHeal = w.heal, wSup = w.sup, wTempo = w.tempo;

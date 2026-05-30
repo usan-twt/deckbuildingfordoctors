@@ -1,6 +1,6 @@
 import { bus } from './events.js';
 import * as engine from './engine.js';
-import { playerPool, playerDeck } from './deck.js';
+import { playerPool, playerDeck, selectedPack, PACK_NAMES, setPack, setDeck, getDefaultDeck } from './deck.js';
 
 bus.addEventListener('log', e => {
   const el = document.getElementById('log-content');
@@ -16,8 +16,35 @@ export function renderAll() {
   renderVitals();
   renderDeck();
   renderHand();
+  renderSearch();
   document.getElementById('btn-turn-end').disabled =
     !(engine.isTurnActive() && !engine.isPlayingCard() && !engine.isPickingDiscard());
+}
+
+function renderSearch() {
+  const opts = engine.searchOptions();
+  let ov = document.getElementById('search-overlay');
+  if (!opts.length) { if (ov) ov.remove(); return; }
+  const CARDS = engine.CARDS;
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'search-overlay';
+    ov.className = 'result-overlay';
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `<div class="result-box">
+    <div class="result-title">수소문 — 회수할 카드</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px">
+      ${opts.map(o => `
+        <div class="hand-card disc-${CARDS[o.id]?.discipline}" data-idx="${o.idx}">
+          <div class="cost">${CARDS[o.id]?.cost}</div>
+          <div class="card-name">${o.id}</div>
+          <div class="effect">${(CARDS[o.id]?.desc || '').replace(/\n/g, ' ')}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+  ov.querySelectorAll('[data-idx]').forEach(el =>
+    el.addEventListener('click', () => engine.resolveSearchPick(+el.dataset.idx)));
 }
 
 function renderInfo() {
@@ -33,16 +60,18 @@ function renderVitals() {
   const dPct = Math.max(0, (G.diseaseHp / G.maxDiseaseHp) * 100).toFixed(1);
   const picking = engine.isPickingSymptom();
 
-  const condRows = G.symptoms.map(s => {
+  const cands = engine.pickCandidates();
+  const condRows = G.symptoms.map((s, i) => {
     const isActive = s.sup === 0;
-    const canPick = picking && isActive;
+    const canPick = picking && cands.includes(s);
     const stateClass = isActive ? 'is-active' : 'is-suppressed';
     const pickClass = canPick ? ' pickable' : '';
     const timer = isActive ? `방치 ${s.neglect}턴` : `억제 ${s.sup}턴 남음`;
     const intent = engine.computeSymptomIntent(s);
-    return `<div class="cond ${stateClass}${pickClass}" data-sym="${s.name}">
+    const dispName = s.diag ? s.name : '?';
+    return `<div class="cond ${stateClass}${pickClass}" data-idx="${i}">
       <div class="cond-row">
-        <span class="cond-name">${s.name}</span>
+        <span class="cond-name">${dispName}</span>
         <span class="timer">${timer}</span>
       </div>
       ${intent ? `<div class="cond-intent">${intent}</div>` : ''}
@@ -76,8 +105,8 @@ function renderVitals() {
   if (picking) {
     panel.querySelectorAll('.cond.pickable').forEach(el => {
       el.addEventListener('click', () => {
-        const sym = G.symptoms.find(s => s.name === el.dataset.sym && s.sup === 0);
-        if (sym) engine.resolveSymptomPick(sym);
+        const sym = G.symptoms[+el.dataset.idx];
+        if (sym && cands.includes(sym)) engine.resolveSymptomPick(sym);
       });
     });
   }
@@ -105,24 +134,25 @@ function renderHand() {
   const CARDS = engine.CARDS;
   const handEl = document.getElementById('hand');
   handEl.innerHTML = '';
-  const isDiscardPick = engine.isPickingDiscard();
+  const pickMode = engine.isPickingDiscard() || engine.isPickingHandTarget();
 
   G.hand.forEach((id, idx) => {
     if (!id) return;
     const c = CARDS[id];
-    const cost = Math.max(0, c.cost - G.costReduce);
+    const markCut = G.marked?.id === id ? G.marked.cost : 0;
+    const cost = Math.max(0, c.cost - G.costReduce - markCut);
     const canPlay = engine.isTurnActive() && !engine.isPlayingCard() && G.energy >= cost;
 
     const card = document.createElement('div');
     card.className = `hand-card disc-${c.discipline}` +
-      (isDiscardPick ? ' discard-pick' : (canPlay ? '' : ' disabled'));
+      (pickMode ? ' discard-pick' : (canPlay ? '' : ' disabled'));
     card.innerHTML = `
       <div class="cost">${cost}</div>
       <div class="attr">${c.discipline}</div>
       <div class="card-name">${id}</div>
       <div class="effect">${c.desc}</div>
     `;
-    if (isDiscardPick || canPlay) card.addEventListener('click', () => engine.handleCardClick(idx));
+    if (pickMode || canPlay) card.addEventListener('click', () => engine.handleCardClick(idx));
     handEl.appendChild(card);
   });
 }
@@ -143,6 +173,21 @@ export function showResult(title, detail) {
 
 export function renderDeckBuilder() {
   const CARDS = engine.CARDS;
+
+  const packBar = document.getElementById('db-pack-bar');
+  if (packBar) {
+    packBar.innerHTML = `<span class="db-pack-label">동료 팩</span>` +
+      PACK_NAMES.map(p =>
+        `<button class="db-pack-btn${selectedPack === p ? ' active' : ''}" data-pack="${p}">${p}</button>`
+      ).join('');
+    packBar.querySelectorAll('[data-pack]').forEach(el =>
+      el.addEventListener('click', () => {
+        setPack(el.dataset.pack);
+        setDeck(getDefaultDeck());
+        renderDeckBuilder();
+      }));
+  }
+
   const inDeckCount = {};
   for (const id of playerDeck) inDeckCount[id] = (inDeckCount[id] || 0) + 1;
 
