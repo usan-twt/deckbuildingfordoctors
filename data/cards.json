@@ -4,7 +4,7 @@
   {"id": "대증처치",     "cost": 1, "type": "treatment", "discipline": "내과", "desc": "증상 1개 2턴 억제",              "effect": {"suppress": "any", "turns": 2}},
   {"id": "수액투여",     "cost": 1, "type": "stabilize", "discipline": "내과", "desc": "방어 +6",                        "effect": {"defense": 6}},
   {"id": "응급처치",     "cost": 1, "type": "stabilize", "discipline": "공통", "desc": "방어 +3, 환자 +2 HP",            "effect": {"defense": 3, "heal": 2}},
-  {"id": "활력징후확인", "cost": 0, "type": "stabilize", "discipline": "공통", "desc": "방어 +2",                        "effect": {"defense": 2}},
+  {"id": "활력징후확인", "cost": 0, "type": "stabilize", "discipline": "공통", "desc": "방어 +2, 증상 1개 진단",         "effect": {"defense": 2, "reveal": 1}},
   {"id": "청진",         "cost": 0, "type": "support",   "discipline": "공통", "desc": "다음 치료 카드 +2",              "effect": {"buff_next_treatment": 2}},
   {"id": "약재준비",     "cost": 1, "type": "support",   "discipline": "내과", "desc": "다음 카드 코스트 -1",            "effect": {"cost_reduce_next": 1}},
   {"id": "간호사호출",   "cost": 1, "type": "support",   "discipline": "공통", "desc": "카드 2장 드로우",                "effect": {"draw": 2}},

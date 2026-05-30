@@ -383,6 +383,11 @@ async function playCard(id) {
       }
     }
     if (e.heal) { G.patientHp = Math.min(G.maxHp, G.patientHp + e.heal); log(`  환자 +${e.heal} HP`); }
+    if (e.suppress_symptom) {
+      const target = getSym(e.suppress_symptom);
+      if (target && target.sup === 0) applySuppress(target, e.suppress_turns || 2);
+      else log(`  ${e.suppress_symptom} 비활성`);
+    }
     if (e.heal_if_low && G.patientHp / G.maxHp < e.heal_if_low.threshold) {
       G.patientHp = Math.min(G.maxHp, G.patientHp + e.heal_if_low.amount);
       log(`  위급 추가 회복 +${e.heal_if_low.amount}`);
