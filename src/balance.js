@@ -46,6 +46,8 @@ async function runPersona(scenario, deck, persona, nRuns, onProgress, progressOf
     onTurnStart(snap) { if (currentGame) currentGame.hpTrace.push(snap); },
     onCardPlayed(turn, id) { if (currentGame) currentGame.cardLog.push({ turn, id }); },
   };
+  if (persona.pickSearch)     strategy.pickSearch     = (...a) => persona.pickSearch(...a);
+  if (persona.pickHandTarget) strategy.pickHandTarget = (...a) => persona.pickHandTarget(...a);
 
   engine.setSimStrategy(strategy);
 
