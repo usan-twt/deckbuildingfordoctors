@@ -1,6 +1,6 @@
 [
   {"id": "투약",         "cost": 1, "type": "treatment", "discipline": "내과", "desc": "본체 -6 HP",                     "effect": {"damage": 6}},
-  {"id": "응급시술",     "cost": 2, "type": "treatment", "discipline": "외과", "desc": "본체 -12 HP",                    "effect": {"damage": 12}},
+  {"id": "응급시술",     "cost": 2, "type": "treatment", "discipline": "외과", "desc": "본체 -14 HP",                    "effect": {"damage": 14}},
   {"id": "대증처치",     "cost": 1, "type": "treatment", "discipline": "내과", "desc": "증상 1개 2턴 억제",              "effect": {"suppress": "any", "turns": 2}},
   {"id": "수액투여",     "cost": 1, "type": "stabilize", "discipline": "내과", "desc": "방어 +6",                        "effect": {"defense": 6}},
   {"id": "응급처치",     "cost": 1, "type": "stabilize", "discipline": "공통", "desc": "방어 +3, 환자 +2 HP",            "effect": {"defense": 3, "heal": 2}},
